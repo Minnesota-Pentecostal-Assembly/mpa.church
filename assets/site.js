@@ -1,3 +1,19 @@
+// ===== Google Analytics (GA4) =====
+// Paste your Measurement ID between the quotes, e.g. 'G-ABC123XYZ9'.
+// Leave it empty to turn tracking off. This one line covers every page.
+var GA_MEASUREMENT_ID = '';
+(function () {
+  if (!GA_MEASUREMENT_ID) return;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_MEASUREMENT_ID);
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { window.dataLayer.push(arguments); };
+  window.gtag('js', new Date());
+  window.gtag('config', GA_MEASUREMENT_ID);
+})();
+
 // MPA Church redesign concept: shared behavior
 (function () {
   var doc = document.documentElement;

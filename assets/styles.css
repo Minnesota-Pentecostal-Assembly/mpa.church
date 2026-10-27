@@ -429,3 +429,38 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
 .card:nth-child(n) .icon.brand-instagram { background: #fbe6f1; color: #c2185b; }
 
 .site-footer .follow { margin: 1rem 0 .2rem; font-weight: 600; color: var(--on-dark); }
+
+/* Give: Zeffy form with calendar-style banner */
+.give-wrap { margin-top: 0; }
+.give-embed { position: relative; overflow: hidden; height: 1200px; width: 100%; background: #fff; border: 2px solid var(--ink-3); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); }
+.give-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+
+/* Give: compact Ways to Give tiles */
+.list-clean.give-ways { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .8rem; margin-top: 1rem; }
+.list-clean.give-ways li, .list-clean.give-ways li:last-child { flex-direction: column; justify-content: flex-start; gap: .3rem; padding: .95rem 1.05rem; border: 1px solid var(--line-dark); border-radius: 14px; background: rgba(255, 255, 255, .04); }
+.list-clean.give-ways span { text-align: left; font-size: .95rem; line-height: 1.45; overflow-wrap: anywhere; }
+@media (max-width: 980px) { .list-clean.give-ways { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .list-clean.give-ways { grid-template-columns: 1fr; } }
+
+/* Give: Donate Online banner QR + tip note */
+.give-wrap { margin-top: 2.2rem; }
+.give-banner .give-qr { margin: 0 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: .3rem; flex: none; }
+.give-banner .give-qr img { display: block; width: 84px; height: 84px; padding: 5px; background: #fff; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.give-banner .give-qr figcaption { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--on-dark-muted); }
+.tip-note { display: flex; gap: 1rem; align-items: flex-start; padding: 1.3rem 1.4rem; background: linear-gradient(180deg, #fff7ee, #fffdf9); border: 2px solid var(--ink-3); border-top: 0; border-bottom: 1px solid #f0dcc6; }
+.tip-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: rgba(166, 11, 27, .1); color: var(--crimson); }
+.tip-icon svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tip-body h3 { margin: 0 0 .3rem; font-size: 1.15rem; color: var(--ink); }
+.tip-body p { margin: 0; color: var(--ink-2); max-width: 68ch; }
+.tip-body strong { color: var(--crimson); }
+.tip-steps { list-style: none; padding: 0; margin: .9rem 0 0; display: flex; flex-wrap: wrap; gap: .55rem; }
+.tip-steps li { display: flex; align-items: center; gap: .5rem; padding: .4rem .85rem .4rem .45rem; background: #fff; border: 1px solid #ecd3b8; border-radius: 999px; font-size: .93rem; color: var(--ink-2); }
+.tip-steps .n { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--ink); font-weight: 700; font-size: .8rem; }
+.give-wrap .give-embed { border-top: 0; }
+@media (max-width: 560px) {
+  .give-banner .give-qr img { width: 64px; height: 64px; }
+  .give-banner .give-qr figcaption { display: none; }
+  .tip-note { flex-direction: column; gap: .7rem; }
+  .tip-steps { flex-direction: column; align-items: flex-start; }
+}
