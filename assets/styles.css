@@ -467,3 +467,6 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
 
 /* Shared header/footer: reserve header space while partials/header.html loads */
 .site-header[data-include]:empty { min-height: 72px; }
+
+/* Portraits: keep heads in view if a photo is not square */
+.portrait { object-position: 50% 20%; }
