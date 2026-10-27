@@ -1,7 +1,7 @@
 // ===== Google Analytics (GA4) =====
 // Paste your Measurement ID between the quotes, e.g. 'G-ABC123XYZ9'.
 // Leave it empty to turn tracking off. This one line covers every page.
-var GA_MEASUREMENT_ID = '';
+var GA_MEASUREMENT_ID = 'G-JTJ71YN59F';
 (function () {
   if (!GA_MEASUREMENT_ID) return;
   var s = document.createElement('script');
