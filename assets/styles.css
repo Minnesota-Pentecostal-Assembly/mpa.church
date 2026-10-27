@@ -464,3 +464,6 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
   .tip-note { flex-direction: column; gap: .7rem; }
   .tip-steps { flex-direction: column; align-items: flex-start; }
 }
+
+/* Shared header/footer: reserve header space while partials/header.html loads */
+.site-header[data-include]:empty { min-height: 72px; }

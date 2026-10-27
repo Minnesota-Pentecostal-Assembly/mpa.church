@@ -14,10 +14,47 @@ var GA_MEASUREMENT_ID = '';
   window.gtag('config', GA_MEASUREMENT_ID);
 })();
 
+// ===== Shared header and footer =====
+// Each page has <header data-include="partials/header.html"> and
+// <footer data-include="partials/footer.html">. Edit those two files to change
+// the header or footer on every page.
+//   data-nav="connect"   highlights a menu section (home, new, connect,
+//                        events, resources, learn; several allowed, space separated)
+//   data-motto="off"     hides the motto line in the footer (used on the homepage)
+function loadPartials() {
+  var slots = Array.prototype.slice.call(document.querySelectorAll('[data-include]'));
+  return Promise.all(slots.map(function (el) {
+    return fetch(el.getAttribute('data-include'))
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (html) { el.innerHTML = html; })
+      .catch(function (err) { console.error('Could not load ' + el.getAttribute('data-include'), err); });
+  })).then(function () {
+    var header = document.querySelector('.site-header[data-nav]');
+    if (header) {
+      var keys = header.getAttribute('data-nav').split(/\s+/);
+      var labels = { 'new': 'I am New', connect: 'Connect', resources: 'Resources', learn: 'Learn More' };
+      keys.forEach(function (k) {
+        if (k === 'home' || k === 'events') {
+          var a = header.querySelector('a.top[href="' + (k === 'home' ? './' : 'events') + '"]');
+          if (a) a.setAttribute('aria-current', 'page');
+        } else if (labels[k]) {
+          header.querySelectorAll('.has-sub > button.top').forEach(function (b) {
+            if (b.textContent.trim() === labels[k]) b.style.color = 'var(--accent-soft)';
+          });
+        }
+      });
+    }
+    var footer = document.querySelector('.site-footer[data-motto="off"]');
+    if (footer) {
+      var m = footer.querySelector('.foot-motto');
+      if (m) m.remove();
+    }
+  });
+}
+
 // MPA Church redesign concept: shared behavior
-(function () {
-  var doc = document.documentElement;
-  doc.classList.add('js');
+document.documentElement.classList.add('js');
+loadPartials().then(function () {
 
   var header = document.querySelector('.site-header');
   var onScroll = function () {
@@ -119,4 +156,4 @@ var GA_MEASUREMENT_ID = '';
       }
     });
   }
-})();
+});
