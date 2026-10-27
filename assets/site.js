@@ -32,16 +32,12 @@ function loadPartials() {
     var header = document.querySelector('.site-header[data-nav]');
     if (header) {
       var keys = header.getAttribute('data-nav').split(/\s+/);
-      var labels = { 'new': 'I am New', connect: 'Connect', resources: 'Resources', learn: 'Learn More' };
+      var hrefs = { home: './', events: 'events', 'new': 'im-new', connect: 'connect', resources: 'resources', learn: 'learn-more' };
       keys.forEach(function (k) {
-        if (k === 'home' || k === 'events') {
-          var a = header.querySelector('a.top[href="' + (k === 'home' ? './' : 'events') + '"]');
-          if (a) a.setAttribute('aria-current', 'page');
-        } else if (labels[k]) {
-          header.querySelectorAll('.has-sub > button.top').forEach(function (b) {
-            if (b.textContent.trim() === labels[k]) b.style.color = 'var(--accent-soft)';
-          });
-        }
+        var a = hrefs[k] && header.querySelector('a.top[href="' + hrefs[k] + '"]');
+        if (!a) return;
+        if (k === 'home' || k === 'events') a.setAttribute('aria-current', 'page');
+        else a.style.color = 'var(--accent-soft)';
       });
     }
     var footer = document.querySelector('.site-footer[data-motto="off"]');
@@ -92,7 +88,7 @@ loadPartials().then(function () {
   }
 
   // Submenu toggles (touch and keyboard)
-  document.querySelectorAll('.has-sub > button.top').forEach(function (btn) {
+  document.querySelectorAll('.has-sub > .sub-toggle').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
       var li = btn.parentElement;
       var open = li.classList.toggle('open');
@@ -104,7 +100,7 @@ loadPartials().then(function () {
     document.querySelectorAll('.has-sub.open').forEach(function (li) {
       if (window.innerWidth > 980) {
         li.classList.remove('open');
-        li.querySelector('button.top').setAttribute('aria-expanded', 'false');
+        li.querySelector('.sub-toggle').setAttribute('aria-expanded', 'false');
       }
     });
   });
