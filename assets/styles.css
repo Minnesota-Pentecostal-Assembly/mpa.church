@@ -427,3 +427,5 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
 .card:nth-child(n) .icon.brand-youtube { background: #fde7e7; color: #e00000; }
 .card:nth-child(n) .icon.brand-facebook { background: #e3edfd; color: #1877f2; }
 .card:nth-child(n) .icon.brand-instagram { background: #fbe6f1; color: #c2185b; }
+
+.site-footer .follow { margin: 1rem 0 .2rem; font-weight: 600; color: var(--on-dark); }
