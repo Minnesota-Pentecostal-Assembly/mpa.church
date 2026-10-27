@@ -114,6 +114,31 @@ loadPartials().then(function () {
     }
   });
 
+  // Copy buttons: <button data-copy="#element-id">
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = document.querySelector(btn.getAttribute('data-copy'));
+      if (!src) return;
+      var text = src.textContent.trim();
+      var done = function () {
+        var label = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = label; btn.classList.remove('copied'); }, 1800);
+      };
+      var fallback = function () {
+        var t = document.createElement('textarea');
+        t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+        document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(t);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+    });
+  });
+
   // Scroll reveal
   var items = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
