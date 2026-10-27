@@ -513,3 +513,6 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
   .map-banner .map-dir { margin-left: 0; width: 100%; text-align: center; }
   .map-embed iframe { height: 340px; }
 }
+.map-embed { border: 2px solid var(--ink-3); border-top: 0; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+.map-embed iframe { border: 0 !important; border-radius: 0; }
+@media (max-width: 700px) { .map-embed iframe { height: 340px !important; } }
