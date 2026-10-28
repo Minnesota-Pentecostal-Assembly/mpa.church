@@ -668,3 +668,4 @@ section.block.wl-detail{padding-top:1rem}
 @media(max-width:860px){.pillars{grid-template-columns:1fr}.pdetail{grid-template-columns:1fr;gap:.6rem;padding:1.5rem 1.3rem}.pd-side{flex-direction:row}}
 section.block.wl-vision{padding-bottom:1.5rem}
 .wl-lead{margin-bottom:0}
+@media (max-width: 900px) { .bf-item { scroll-margin-top: 128px; } }
