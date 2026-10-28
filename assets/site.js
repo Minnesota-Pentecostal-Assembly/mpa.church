@@ -158,6 +158,33 @@ loadPartials().then(function () {
     });
   });
 
+  // Belief page: highlight the statement being read in the contents list
+  var toc = document.querySelector('.bf-toc');
+  if (toc) {
+    var links = {};
+    toc.querySelectorAll('a[href^="#"]').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+    var setOn = function (id) {
+      Object.keys(links).forEach(function (k) { links[k].classList.toggle('on', k === id); });
+      var a = links[id], ol = toc.querySelector('ol');
+      if (a && ol && ol.scrollWidth > ol.clientWidth) ol.scrollTo({ left: a.offsetLeft - 8, behavior: 'smooth' });
+    };
+    var items = Array.prototype.slice.call(document.querySelectorAll('.bf-item'));
+    var current = '';
+    var update = function () {
+      var line = window.innerWidth > 900 ? 130 : 170;
+      var id = items.length ? items[0].id : '';
+      items.forEach(function (el) { if (el.getBoundingClientRect().top - line <= 0) id = el.id; });
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && items.length) {
+        var last = items[items.length - 1];
+        if (last.getBoundingClientRect().top < window.innerHeight) id = last.id;
+      }
+      if (id !== current) { current = id; setOn(id); }
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  }
+
   // Highlight the current week in the prayer table and show it at the top
   var rows = document.querySelectorAll('[data-week-start]');
   if (rows.length) {
