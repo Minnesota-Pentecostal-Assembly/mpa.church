@@ -49,7 +49,30 @@ function loadPartials() {
 }
 
 // MPA Church redesign concept: shared behavior
-document.documentElement.classList.add('js');
+
+// Scroll reveal. Runs right away (it does not wait for the header and footer).
+// Anything already on screen at load is shown immediately with no fade, so the
+// main content paints fast; content further down fades in as you scroll to it.
+(function () {
+  var items = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  var fold = window.innerHeight || document.documentElement.clientHeight;
+  items.forEach(function (el) {
+    if (el.getBoundingClientRect().top < fold) el.classList.add('in', 'instant');
+  });
+  document.documentElement.classList.add('js');
+  var rest = items.filter(function (el) { return !el.classList.contains('in'); });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.12 });
+    rest.forEach(function (el) { io.observe(el); });
+  } else {
+    rest.forEach(function (el) { el.classList.add('in'); });
+  }
+})();
+
 loadPartials().then(function () {
 
   var header = document.querySelector('.site-header');
@@ -135,17 +158,31 @@ loadPartials().then(function () {
     });
   });
 
-  // Scroll reveal
-  var items = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
-      });
-    }, { threshold: 0.12 });
-    items.forEach(function (el) { io.observe(el); });
-  } else {
-    items.forEach(function (el) { el.classList.add('in'); });
+  // Belief page: highlight the statement being read in the contents list
+  var toc = document.querySelector('.bf-toc');
+  if (toc) {
+    var links = {};
+    toc.querySelectorAll('a[href^="#"]').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+    var setOn = function (id) {
+      Object.keys(links).forEach(function (k) { links[k].classList.toggle('on', k === id); });
+      var a = links[id], ol = toc.querySelector('ol');
+      if (a && ol && ol.scrollWidth > ol.clientWidth) ol.scrollTo({ left: a.offsetLeft - 8, behavior: 'smooth' });
+    };
+    var items = Array.prototype.slice.call(document.querySelectorAll('.bf-item'));
+    var current = '';
+    var update = function () {
+      var line = window.innerWidth > 900 ? 130 : 170;
+      var id = items.length ? items[0].id : '';
+      items.forEach(function (el) { if (el.getBoundingClientRect().top - line <= 0) id = el.id; });
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && items.length) {
+        var last = items[items.length - 1];
+        if (last.getBoundingClientRect().top < window.innerHeight) id = last.id;
+      }
+      if (id !== current) { current = id; setOn(id); }
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
   }
 
   // Highlight the current week in the prayer table and show it at the top
@@ -166,6 +203,35 @@ loadPartials().then(function () {
           card.querySelector('[data-f="country"]').textContent = cells[2].textContent;
           card.querySelector('[data-f="state"]').textContent = cells[3].textContent;
           card.querySelector('[data-f="city"]').textContent = cells[4].textContent;
+          // Small maps beside the names (files in assets/maps, named after the place)
+          var slug = function (name) {
+            return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+          };
+          var maps = {
+            country: 'assets/maps/countries/' + slug(cells[2].textContent) + '.svg',
+            state: 'assets/maps/states/' + slug(cells[3].textContent) + '.svg',
+            city: 'assets/maps/states/minnesota.svg'
+          };
+          Object.keys(maps).forEach(function (k) {
+            var img = card.querySelector('[data-map="' + k + '"]');
+            if (!img) return;
+            // Keep the map on the same line as the last word of the name
+            var label = img.parentNode.querySelector('[data-f]');
+            if (label && !img.parentNode.querySelector('.tw-nowrap')) {
+              var words = label.textContent.trim().split(/\s+/);
+              var last = words.pop();
+              label.textContent = words.length ? words.join(' ') + ' ' : '';
+              var keep = document.createElement('span');
+              keep.className = 'tw-nowrap';
+              keep.textContent = last;
+              keep.appendChild(img);
+              label.parentNode.appendChild(keep);
+            }
+            img.onload = function () { img.hidden = false; };
+            img.onerror = function () { img.hidden = true; };
+            img.src = maps[k];
+          });
           card.setAttribute('href', '#' + r.id);
           card.hidden = false;
           card.addEventListener('click', function () {
