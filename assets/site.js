@@ -244,3 +244,151 @@ loadPartials().then(function () {
     });
   }
 });
+
+/* ---- Home: latest video (click to load YouTube) and upcoming dates ---- */
+(function () {
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.yt-facade');
+    if (!b) return;
+    var f = document.createElement('iframe');
+    f.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(b.dataset.yt) + '?autoplay=1&rel=0';
+    f.title = b.getAttribute('aria-label') || 'YouTube video';
+    f.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    f.allowFullscreen = true;
+    var wrap = document.createElement('div');
+    wrap.className = 'al-frame';
+    wrap.appendChild(f);
+    b.replaceWith(wrap);
+  });
+
+  var list = document.getElementById('coming-up');
+  if (!list) return;
+  // Regular schedule. weeks: which week of the month (1 = first); omit for every week.
+  // day: 0 = Sunday ... 6 = Saturday. mins: start time, used to sort same-day items.
+  // c: '' orange (St. Paul Park), 'c2' red (Bloomington), 'c3' blue (Rochester).
+  var SCHEDULE = [
+    { day: 0, mins: 570, title: 'Sunday Services', info: '9:30 AM English, 11:00 AM International &middot; St. Paul Park', c: '', once: true },
+    { day: 6, weeks: [1], mins: 630, title: 'Fasting Prayer', info: '10:30 AM', c: '' },
+    { day: 6, weeks: [1, 3], mins: 1110, title: 'Malayalam Service', info: '6:30 PM', c: '' },
+    { day: 0, weeks: [2, 4], mins: 1020, title: 'Bloomington Campus', info: '5 to 7 PM &middot; Room 200, 2300 E 88th St', c: 'c2' },
+    { day: 0, weeks: [3], mins: 1020, title: 'Rochester Campus', info: '5 to 7 PM &middot; Living Hope Church', c: 'c3' }
+  ];
+  var SHOW = 5, DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var out = [], used = {}, d = new Date();
+  d.setHours(12, 0, 0, 0);
+  for (var i = 0; i < 70 && out.length < SHOW; i++, d.setDate(d.getDate() + 1)) {
+    var week = Math.ceil(d.getDate() / 7), today = [];
+    SCHEDULE.forEach(function (ev, n) {
+      if (ev.day !== d.getDay() || (ev.weeks && ev.weeks.indexOf(week) < 0) || (ev.once && used[n])) return;
+      used[n] = true;
+      today.push(ev);
+    });
+    today.sort(function (a, b) { return a.mins - b.mins; });
+    for (var k = 0; k < today.length && out.length < SHOW; k++) {
+      var ev = today[k];
+      out.push('<li><span class="d' + (ev.c ? ' ' + ev.c : '') + '"><b>' + d.getDate() + '</b>' + MONTHS[d.getMonth()] +
+        '</span><div><strong>' + ev.title + '</strong><span>' + DAYS[d.getDay()] + ' &middot; ' + ev.info + '</span></div></li>');
+    }
+  }
+  if (out.length) list.innerHTML = out.join('');
+})();
+
+/* ---- Events: campus filter, Add to calendar, hide past events ---- */
+(function () {
+  var box = document.getElementById('upcoming');
+  if (!box) return;
+  var now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+
+  // Hide events that ended since the list was last updated.
+  box.querySelectorAll('.up-list li').forEach(function (li) {
+    if (li.dataset.end && li.dataset.end < now) li.remove();
+  });
+
+  function refresh(f) {
+    var shown = 0;
+    box.querySelectorAll('.up-grp').forEach(function (g) {
+      var n = 0;
+      g.querySelectorAll('li').forEach(function (li) {
+        var on = f === 'all' || li.dataset.c === f;
+        li.hidden = !on;
+        if (on) n++;
+      });
+      g.hidden = n === 0;
+      shown += n;
+    });
+    var none = box.querySelector('.up-none');
+    if (none) none.hidden = shown > 0 || !box.querySelector('.up-grp');
+  }
+  refresh('all');
+
+  box.querySelectorAll('.chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      box.querySelectorAll('.chip').forEach(function (x) {
+        var on = x === c;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      closeMenu();
+      refresh(c.dataset.f);
+    });
+  });
+
+  function closeMenu() {
+    var m = box.querySelector('.cal-menu');
+    if (m) {
+      m.previousElementSibling.setAttribute('aria-expanded', 'false');
+      m.remove();
+    }
+  }
+
+  function icsEsc(s) { return String(s || '').replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n'); }
+
+  function links(d) {
+    var allDay = d.start.length === 8;
+    var g = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+      '&text=' + encodeURIComponent(d.title) + '&dates=' + d.start + '/' + d.stop +
+      '&details=' + encodeURIComponent(d.desc || '') + '&location=' + encodeURIComponent(d.loc || '');
+    function iso(v) {
+      return allDay ? v.slice(0, 4) + '-' + v.slice(4, 6) + '-' + v.slice(6, 8)
+        : v.replace(/(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z/, '$1-$2-$3T$4:$5:$6Z');
+    }
+    var o = 'https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent' +
+      '&subject=' + encodeURIComponent(d.title) + '&startdt=' + iso(d.start) + '&enddt=' + iso(d.stop) +
+      (allDay ? '&allday=true' : '') + '&body=' + encodeURIComponent(d.desc || '') + '&location=' + encodeURIComponent(d.loc || '');
+    var dt = allDay ? ';VALUE=DATE:' : ':';
+    var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MPA Church//Website//EN', 'BEGIN:VEVENT',
+      'UID:' + d.start + '-' + d.title.replace(/\W+/g, '') + '@mpa.church',
+      'DTSTAMP:' + now, 'DTSTART' + dt + d.start, 'DTEND' + dt + d.stop,
+      'SUMMARY:' + icsEsc(d.title), 'LOCATION:' + icsEsc(d.loc), 'DESCRIPTION:' + icsEsc(d.desc),
+      'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    var a = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    return [['Google Calendar', g, ''], ['Apple / iPhone', a, d.title.replace(/[^\w ]+/g, '').trim() + '.ics'], ['Outlook', o, '']];
+  }
+
+  box.addEventListener('click', function (e) {
+    var btn = e.target.closest('.add');
+    if (!btn) return;
+    e.stopPropagation();
+    var open = btn.getAttribute('aria-expanded') === 'true';
+    closeMenu();
+    if (open) return;
+    var li = btn.closest('li');
+    var menu = document.createElement('div');
+    menu.className = 'cal-menu';
+    menu.setAttribute('role', 'menu');
+    links(li.dataset).forEach(function (l) {
+      var a = document.createElement('a');
+      a.textContent = l[0];
+      a.href = l[1];
+      a.setAttribute('role', 'menuitem');
+      if (l[2]) a.download = l[2]; else { a.target = '_blank'; a.rel = 'noopener'; }
+      menu.appendChild(a);
+    });
+    btn.after(menu);
+    btn.setAttribute('aria-expanded', 'true');
+    menu.querySelector('a').focus();
+  });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.cal-menu')) closeMenu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+})();

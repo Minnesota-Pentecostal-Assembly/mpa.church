@@ -1,12 +1,14 @@
-# Refreshes the "Recent news" list on leadership.html from Pastor Tinku's blog feed
+# Refreshes the "Recent news" list on leadership.html from Pastor Tinku's blog feed,
+# the latest YouTube video on the homepage (index.html, when that section is on the page),
+# and the Upcoming events list on events.html from the Planning Center calendar,
 # at 9 AM and 9 PM Minnesota time (America/Chicago), every day.
 #
 # GitHub schedules run on UTC, which does not change for daylight saving time.
 # So there are two sets of times below, one for summer (CDT) and one for winter (CST).
 # The "Check local time" step lets only the set that matches the current season run.
-# You can also run it any time from the Actions tab > Update blog posts > Run workflow.
+# You can also run it any time from the Actions tab > Update blog, video and events > Run workflow.
 
-name: Update blog posts
+name: Update blog, video and events
 
 on:
   schedule:
@@ -46,15 +48,29 @@ jobs:
         if: steps.season.outputs.run == 'yes'
         run: python3 .github/scripts/update_blog.py
 
+      - name: Fetch latest YouTube video
+        if: steps.season.outputs.run == 'yes'
+        run: python3 .github/scripts/update_sermon.py
+
+      - name: Install calendar tools
+        if: steps.season.outputs.run == 'yes'
+        run: pip install --quiet icalendar recurring_ical_events
+
+      - name: Fetch upcoming events
+        if: steps.season.outputs.run == 'yes'
+        env:
+          PCO_ICAL_URL: ${{ secrets.PCO_ICAL_URL }}
+        run: python3 .github/scripts/update_events.py
+
       - name: Commit if changed
         if: steps.season.outputs.run == 'yes'
         run: |
-          if git diff --quiet -- leadership.html; then
+          if git diff --quiet -- leadership.html index.html events.html; then
             echo "No changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add leadership.html
-          git commit -m "Update blog posts from feed"
+          git add leadership.html index.html events.html
+          git commit -m "Update blog, video and events from feeds"
           git push

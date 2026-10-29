@@ -695,3 +695,108 @@ section.block.wl-vision{padding-bottom:1.5rem}
 .privacy ul { padding-left: 1.2rem; line-height: 1.7; }
 .privacy li { margin-bottom: .35rem; }
 .privacy .updated { margin: 0 0 1rem; color: var(--muted); font-size: .92rem; }
+
+/* ---- Home: This week at MPA (latest video + coming up) ---- */
+.al-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:28px;align-items:start}
+.al-video,.al-events{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.al-frame{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;aspect-ratio:16/9;padding:0;border:0;cursor:pointer;color:#fff;text-decoration:none;background:var(--ink);overflow:hidden}
+.al-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.al-frame::after{content:"";position:absolute;inset:0;background:rgba(7,24,43,.18);transition:background .2s}
+.al-frame:hover::after{background:rgba(7,24,43,.05)}
+.al-fallback{background:linear-gradient(rgba(7,24,43,.55),rgba(7,24,43,.78)),url("images/hero-sanctuary.webp") center 45%/cover}
+.al-fallback::after{display:none}
+.al-fallback b{position:relative;font-family:var(--display);font-size:1.25rem}
+.al-play{position:relative;z-index:1;width:72px;height:50px;border-radius:14px;background:#e62117}
+.al-play::after{content:"";position:absolute;left:29px;top:15px;border-left:18px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent}
+.al-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.al-meta{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px}
+.al-meta small{display:block;color:var(--blue);font-weight:600;font-size:.82rem}
+.al-meta strong{display:block;font-family:var(--display);font-size:1.2rem;color:var(--ink);line-height:1.25}
+.al-meta span{color:var(--muted);font-size:.95rem}
+.al-link{font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap}
+.al-link:hover{text-decoration:underline}
+.al-events{padding:22px 24px}
+.al-events h3{font-size:1.25rem;margin:0 0 6px}
+.al-events ol{list-style:none;margin:0 0 14px;padding:0}
+.al-events li{display:flex;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.al-events .d{flex:none;width:54px;height:58px;border-radius:12px;background:var(--orange);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;line-height:1.1}
+.al-events .d b{font-family:var(--display);font-size:1.45rem;letter-spacing:0;text-transform:none}
+.al-events .d b.dw{font-size:1rem}
+.al-events .d.c2{background:var(--crimson);color:#fff}.al-events .d.c3{background:var(--blue);color:#fff}
+.al-events strong{display:block;font-family:var(--display);color:var(--ink);font-size:1.05rem}
+.al-events li div span{color:var(--muted);font-size:.92rem;line-height:1.35;display:block}
+@media (max-width:820px){.al-grid{grid-template-columns:1fr}.al-meta{flex-direction:column;align-items:flex-start;gap:8px}}
+
+/* ---- Campus colours: same everywhere (St. Paul Park orange, Bloomington blue, Rochester red) ---- */
+.card.campus-spp .icon{background:rgba(254,128,5,.16);color:var(--orange)}
+.card.campus-blm .icon{background:rgba(17,101,155,.14);color:var(--blue)}
+.card.campus-roc .icon{background:rgba(166,11,27,.12);color:var(--crimson)}
+
+/* ---- Social icons ----
+   Standalone social links (footer list, campus cards) use brand-coloured tiles,
+   matching the YouTube / Facebook / Instagram cards. Icons inside buttons and
+   inline text links stay plain and take the text colour, so they blend in. */
+.soc svg.ico{box-sizing:content-box;flex:none;border-radius:10px;padding:8px}
+.soc[href*="youtube.com"] svg.ico{background:#fde7e7;color:#e00000}
+.soc[href*="facebook.com"] svg.ico{background:#e3edfd;color:#1877f2}
+.soc[href*="instagram.com"] svg.ico{background:#fbe6f1;color:#c2185b}
+/* social rows (footer, campus cards): tile only, no outline pill */
+.soc{border:0!important;padding:0;min-width:0;gap:.6rem;background:none!important}
+.soc:hover{background:none!important;color:inherit}
+.soc:hover svg.ico{filter:brightness(.95);transform:translateY(-1px)}
+.soc svg.ico{transition:transform .15s}
+.soc-row{gap:.7rem}
+.site-footer .soc span{color:var(--on-dark)}
+.site-footer .soc-row{flex-direction:column;align-items:flex-start;gap:.6rem}
+
+/* ---- Events: Regular schedule panel ---- */
+.sched{display:grid;grid-template-columns:1.5fr 1fr 1fr;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.sc{--c:var(--orange);padding:24px 26px;border-top:5px solid var(--c)}
+.sc-blm{--c:var(--blue)}.sc-roc{--c:var(--crimson)}
+.sc+.sc{border-left:1px solid var(--line)}
+.sc h3{display:flex;align-items:center;gap:10px;font-size:1.25rem;margin:0}
+.sc h3 i{width:12px;height:12px;border-radius:50%;background:var(--c)}
+.sc .addr{margin:2px 0 14px 22px;color:var(--muted);font-size:.92rem}
+.sc dl{margin:0}
+.sc dl>div{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.sc dt{font-weight:600;color:var(--ink);font-size:.95rem}
+.sc dd{margin:0;color:var(--text);font-size:.95rem;line-height:1.55}
+.sc dd b{font-family:var(--display);color:var(--ink);font-weight:600;margin-right:4px}
+.sc dd small{display:block;color:var(--muted);font-size:.85rem}
+.sc .dir{display:inline-block;margin-top:14px;font-weight:600;color:var(--blue);text-decoration:none;font-size:.92rem}
+.sc .dir:hover{text-decoration:underline}
+@media (max-width:900px){.sched{grid-template-columns:1fr}.sc+.sc{border-left:0}.sc{padding:20px}.sc dl>div{grid-template-columns:1fr;gap:2px}.sc dt{font-size:.82rem;color:var(--muted)}}
+
+/* ---- Events: Upcoming list ---- */
+.up{background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px 32px;margin-top:34px}
+.up-head{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:8px}.up-head h2{margin:0}
+.up-all{font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap}.up-all:hover{text-decoration:underline}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:600 .92rem var(--sans);color:var(--ink);cursor:pointer}
+.chip i{width:10px;height:10px;border-radius:50%;background:var(--orange)}
+.chip[data-f="blm"] i{background:var(--blue)}.chip[data-f="roc"] i{background:var(--crimson)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.up-month{font-size:1rem;color:var(--muted);font-family:var(--sans);font-weight:600;margin:22px 0 4px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.up-list{list-style:none;margin:0;padding:0}
+.up-list li{display:flex;gap:18px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.up-list li>div{flex:1;min-width:0}
+.up-list .d{flex:none;width:56px;height:60px;border-radius:12px;background:var(--orange);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;line-height:1.1}
+.up-list .d b{font-family:var(--display);font-size:1.5rem;letter-spacing:0}
+.up-list .d.blm{background:var(--blue);color:#fff}.up-list .d.roc{background:var(--crimson);color:#fff}
+.up-list strong{display:block;font-family:var(--display);color:var(--ink);font-size:1.08rem}
+.up-list div>span{color:var(--muted);font-size:.93rem;display:block}
+.up-list p{margin:4px 0 0;font-size:.93rem;color:var(--text);max-width:60ch;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.addwrap{position:relative;flex:none}
+.add{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font:600 .82rem var(--sans);color:var(--blue);cursor:pointer;white-space:nowrap}
+.add:hover,.add[aria-expanded="true"]{background:#eef5fb;border-color:#bcd6ea}
+.cal-menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px -12px rgba(7,24,43,.35);padding:6px;z-index:20;min-width:190px}
+.cal-menu a{display:block;padding:9px 12px;border-radius:8px;font-size:.92rem;color:var(--ink);text-decoration:none;font-weight:500}
+.cal-menu a:hover,.cal-menu a:focus{background:var(--paper);outline:none}
+.up-empty,.up-none{color:var(--muted);margin:18px 0 6px}
+.up-note{margin:16px 0 0;color:var(--muted);font-size:.88rem}
+@media (max-width:700px){
+  .up{padding:22px 18px}.up-head{flex-direction:column;align-items:flex-start}
+  .up-list li{gap:14px}
+  .add{width:40px;height:40px;padding:0;font-size:0;border-radius:12px;display:grid;place-items:center}
+  .add::before{content:"";width:20px;height:20px;background:var(--blue);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4'/%3E%3C/svg%3E") center/contain no-repeat}
+}
