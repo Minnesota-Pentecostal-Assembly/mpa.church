@@ -171,15 +171,18 @@ p { margin: 0 0 1em; }
 .hero {
   position: relative; overflow: hidden; color: var(--on-dark); padding: calc(var(--header-h) + 6rem) 0 5rem;
   background:
-    radial-gradient(900px 500px at 78% 8%, rgba(254, 128, 5, .28), transparent 60%),
-    radial-gradient(700px 500px at 5% 95%, rgba(17, 101, 155, .55), transparent 60%),
-    linear-gradient(180deg, var(--ink) 0%, var(--ink-2) 100%);
+    linear-gradient(90deg, rgba(7, 24, 43, .94) 0%, rgba(7, 24, 43, .82) 38%, rgba(7, 24, 43, .35) 75%, rgba(7, 24, 43, .25) 100%),
+    linear-gradient(0deg, rgba(7, 24, 43, .9) 0%, transparent 40%),
+    url("images/hero-sanctuary.webp") center 40% / cover no-repeat,
+    var(--ink);
 }
-.hero::before {
-  content: ""; position: absolute; inset: 0; opacity: .5;
-  background: repeating-conic-gradient(from 200deg at 82% -10%, rgba(255, 179, 107, .07) 0 3deg, transparent 3deg 9deg);
-  mask-image: linear-gradient(180deg, #000 0%, transparent 75%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 75%);
+@media (max-width: 700px) {
+  .hero {
+    background:
+      linear-gradient(180deg, rgba(7, 24, 43, .62) 0%, rgba(7, 24, 43, .74) 65%, var(--ink) 100%) center top / 100% 680px no-repeat,
+      url("images/hero-sanctuary-mobile.webp") center top / auto 680px no-repeat,
+      var(--ink);
+  }
 }
 .hero .wrap { position: relative; }
 .eyebrow { display: inline-block; font-size: .78rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; color: var(--accent); margin-bottom: 1rem; }
