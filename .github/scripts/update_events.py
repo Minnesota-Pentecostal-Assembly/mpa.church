@@ -37,7 +37,15 @@ COLLAPSE_WEEKLY = True
 # and its description is left out if it contains meeting details.
 ONLINE_MARKERS = ["zoom.us", "zoom meeting", "meet.google", "teams.microsoft", "webex", "meeting id", "passcode", "pwd="]
 
-# Which campus an event belongs to, decided from its location and title (lower case).
+# Planning Center campus tags (lower case). If an event carries one of these tags in the feed,
+# the tag decides its campus. Add your exact tag names here if they differ.
+CAMPUS_TAGS = {
+    "spp": ["st. paul park", "st paul park", "saint paul park", "main campus"],
+    "blm": ["bloomington", "mca bloomington"],
+    "roc": ["rochester", "mca rochester"],
+}
+
+# Fallback for events without a campus tag: decided from location and title (lower case).
 # Anything that matches nothing counts as St. Paul Park.
 CAMPUS_WORDS = {
     "blm": ["bloomington", "88th st"],
@@ -121,6 +129,27 @@ def fmt_range(start, end, all_day):
     return f"{a} to {b}"
 
 
+def tags_of(ev):
+    """Tag names on an event, from the feed's CATEGORIES (lower case)."""
+    out = []
+    cats = ev.get("CATEGORIES")
+    if cats is None:
+        return out
+    for c in (cats if isinstance(cats, list) else [cats]):
+        for v in getattr(c, "cats", [c]):
+            name = str(v).strip().lower()
+            if name:
+                out.append(name)
+    return out
+
+
+def campus_from_tags(tags):
+    for code, names in CAMPUS_TAGS.items():
+        if any(t in names for t in tags):
+            return code
+    return None
+
+
 def campus_of(title, location):
     text = f"{title} {location}".lower()
     for code, words in CAMPUS_WORDS.items():
@@ -142,6 +171,10 @@ def weekday_note(days):
 
 def utc_stamp(dt):
     return dt.astimezone(ZoneInfo("UTC")).strftime("%Y%m%dT%H%M%SZ")
+
+
+STATS = {"events": 0, "tagged": 0, "campus_tags": set()}
+CAMPUS_NAMES = {"spp": "St. Paul Park", "blm": "Bloomington", "roc": "Rochester"}
 
 
 def collect(ics_bytes):
@@ -169,9 +202,18 @@ def collect(ics_bytes):
         desc = safe_desc(raw_desc)
         if len(desc) > DESC_CHARS:
             desc = desc[:DESC_CHARS].rsplit(" ", 1)[0] + "…"
-        campus = campus_of(title, location)
-        if online and campus == "spp":
-            campus = "online"
+        tags = tags_of(ev)
+        STATS["events"] += 1
+        if tags:
+            STATS["tagged"] += 1
+        tag_campus = campus_from_tags(tags)
+        if tag_campus:
+            STATS["campus_tags"].add(tag_campus)
+            campus = tag_campus
+        else:
+            campus = campus_of(title, location)
+            if online and campus == "spp":
+                campus = "online"
         items.append({
             "title": title, "start": start, "end": end, "all_day": all_day,
             "location": location, "desc": desc, "campus": campus, "repeat": "",
@@ -250,6 +292,8 @@ def main():
     except Exception as ex:
         print(f"Could not understand the calendar feed ({type(ex).__name__}); page unchanged.")
         return
+    found = ", ".join(CAMPUS_NAMES[c] for c in sorted(STATS["campus_tags"])) or "none"
+    print(f"Tags: {STATS['tagged']} of {STATS['events']} events have tags in the feed; campus tags used: {found}.")
     with open(PAGE, encoding="utf-8") as f:
         page = f.read()
     pat = re.compile(r"(<!-- EVENTS:START[^>]*-->\n).*?(<!-- EVENTS:END -->)", re.S)
