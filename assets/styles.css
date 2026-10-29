@@ -802,3 +802,13 @@ section.block.wl-vision{padding-bottom:1.5rem}
 }
 /* Make sure anything marked hidden stays hidden, even with display rules above (events filter) */
 [hidden]{display:none!important}
+
+/* Belief cards on phones: number and title on one line, text full width below */
+@media (max-width: 760px){
+  .bf-item{grid-template-columns:2.6rem 1fr;column-gap:.6rem;row-gap:0}
+  .bf-item>div{display:contents}
+  .bf-num{grid-column:1;align-self:center;font-size:2.2rem;line-height:1}
+  .bf-item h2{grid-column:2;align-self:center;margin:0}
+  .bf-item p{grid-column:1 / -1}
+  .bf-item h2+p{margin-top:.8rem}
+}
