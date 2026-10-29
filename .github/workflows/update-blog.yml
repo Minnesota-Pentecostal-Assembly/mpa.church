@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # lets this task start the "Deploy static content to Pages" workflow
 
 concurrency:
   group: update-blog
@@ -74,3 +75,8 @@ jobs:
           git add leadership.html index.html events.html
           git commit -m "Update blog, video and events from feeds"
           git push
+          # Commits made by this task don't start other workflows on their own,
+          # so ask the Pages workflow (.github/workflows/static.yml) to publish the update.
+          gh workflow run static.yml --ref "${{ github.ref_name }}" || echo "Could not start static.yml; run 'Deploy static content to Pages' manually."
+        env:
+          GH_TOKEN: ${{ github.token }}
