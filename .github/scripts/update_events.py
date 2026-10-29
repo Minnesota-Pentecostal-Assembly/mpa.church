@@ -25,10 +25,17 @@ DAYS_AHEAD = 62          # how far ahead to look
 MAX_EVENTS = 24          # most events to list
 DESC_CHARS = 220         # longest description shown
 
-# Weekly events (like Sunday services) are hidden because the Regular schedule panel covers them.
-HIDE_WEEKLY = True
-# Any event whose title contains one of these words is hidden (lower case).
-HIDE_TITLE_WORDS = []
+# Events already shown in the Regular schedule panel are hidden (title contains, lower case).
+HIDE_TITLE_WORDS = ["english service", "international service"]
+
+# Events that repeat every week (e.g. prayer meetings) are shown once, at their next date,
+# with a note like "Every Thursday", so they don't fill up the list.
+COLLAPSE_WEEKLY = True
+
+# Online meeting links, IDs and passcodes are never published.
+# An event whose location is an online meeting shows as "Online" instead,
+# and its description is left out if it contains meeting details.
+ONLINE_MARKERS = ["zoom.us", "zoom meeting", "meet.google", "teams.microsoft", "webex", "meeting id", "passcode", "pwd="]
 
 # Which campus an event belongs to, decided from its location and title (lower case).
 # Anything that matches nothing counts as St. Paul Park.
@@ -36,6 +43,7 @@ CAMPUS_WORDS = {
     "blm": ["bloomington", "88th st"],
     "roc": ["rochester", "living hope"],
 }
+URL_RE = re.compile(r"(?:https?://|www\.)\S+|\b[\w.-]+\.(?:zoom\.us|webex\.com)/\S*", re.I)
 
 
 def load_feed():
@@ -60,13 +68,26 @@ def clean_text(value):
     return re.sub(r"\s+", " ", text).strip()
 
 
-def is_weekly(component):
-    rule = component.get("RRULE")
-    if not rule:
-        return False
-    freq = (rule.get("FREQ") or [""])[0]
-    interval = int((rule.get("INTERVAL") or [1])[0])
-    return freq == "WEEKLY" and interval == 1
+def has_online_details(text):
+    t = (text or "").lower()
+    return any(m in t for m in ONLINE_MARKERS)
+
+
+def safe_location(location):
+    if not location:
+        return "", False
+    if has_online_details(location) or URL_RE.search(location):
+        return ("Online (Zoom)" if "zoom" in location.lower() else "Online"), True
+    return location, False
+
+
+def safe_desc(desc):
+    """Drop meeting details entirely; otherwise remove any sentence that contains a web link."""
+    if not desc or has_online_details(desc):
+        return ""
+    parts = re.split(r"(?<=[.!?])\s+", desc)
+    kept = [p for p in parts if not URL_RE.search(p)]
+    return URL_RE.sub("", " ".join(kept)).strip()
 
 
 def to_local(value):
@@ -108,6 +129,17 @@ def campus_of(title, location):
     return "spp"
 
 
+DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+
+def weekday_note(days):
+    names = [DAY_NAMES[d] for d in sorted(days)]
+    if len(names) == 1:
+        return "Every " + names[0]
+    short = [n[:3] for n in names]
+    return "Every " + ", ".join(short[:-1]) + " and " + short[-1]
+
+
 def utc_stamp(dt):
     return dt.astimezone(ZoneInfo("UTC")).strftime("%Y%m%dT%H%M%SZ")
 
@@ -116,13 +148,10 @@ def collect(ics_bytes):
     cal = icalendar.Calendar.from_ical(ics_bytes)
     now = datetime.now(TZ)
     until = now + timedelta(days=DAYS_AHEAD)
-    weekly_uids = {str(c.get("UID")) for c in cal.walk("VEVENT") if is_weekly(c)}
     items = []
     for ev in recurring_ical_events.of(cal).between(now - timedelta(hours=12), until):
-        title = clean_text(ev.get("SUMMARY"))
+        title = URL_RE.sub("", clean_text(ev.get("SUMMARY"))).strip()
         if not title:
-            continue
-        if HIDE_WEEKLY and str(ev.get("UID")) in weekly_uids:
             continue
         if any(w in title.lower() for w in HIDE_TITLE_WORDS):
             continue
@@ -133,15 +162,40 @@ def collect(ics_bytes):
             end = end - timedelta(seconds=1)  # all-day end dates are exclusive
         if (end or start) < now:
             continue
-        location = clean_text(ev.get("LOCATION"))
-        desc = clean_text(ev.get("DESCRIPTION"))
+        raw_desc = clean_text(ev.get("DESCRIPTION"))
+        location, online = safe_location(clean_text(ev.get("LOCATION")))
+        if not location and has_online_details(raw_desc):
+            location, online = ("Online (Zoom)" if "zoom" in raw_desc.lower() else "Online"), True
+        desc = safe_desc(raw_desc)
         if len(desc) > DESC_CHARS:
             desc = desc[:DESC_CHARS].rsplit(" ", 1)[0] + "…"
+        campus = campus_of(title, location)
+        if online and campus == "spp":
+            campus = "online"
         items.append({
             "title": title, "start": start, "end": end, "all_day": all_day,
-            "location": location, "desc": desc, "campus": campus_of(title, location),
+            "location": location, "desc": desc, "campus": campus, "repeat": "",
         })
     items.sort(key=lambda i: (i["start"], i["title"]))
+
+    if COLLAPSE_WEEKLY:
+        by_title = {}
+        for it in items:
+            by_title.setdefault(it["title"].lower(), []).append(it)
+        keep = []
+        for it in items:
+            series = by_title[it["title"].lower()]
+            starts = [x["start"] for x in series]
+            gaps = [(b - a).days for a, b in zip(starts, starts[1:])]
+            weekly = len(series) >= 3 and gaps and sorted(gaps)[len(gaps) // 2] <= 7
+            if not weekly:
+                keep.append(it)
+            elif it is series[0]:
+                first = starts[0]
+                days = {x.weekday() for x in starts if x < first + timedelta(days=7)}
+                it["repeat"] = weekday_note(days)
+                keep.append(it)
+        items = keep
     return items[:MAX_EVENTS]
 
 
@@ -161,7 +215,7 @@ def render(items):
             month = m
         when = fmt_range(s, it["end"], it["all_day"])
         place = it["location"].split(",")[0] if it["location"] else ""
-        meta = when + (f" &middot; {e(place)}" if place else "")
+        meta = (f"{e(it['repeat'])} &middot; " if it["repeat"] else "") + when + (f" &middot; {e(place)}" if place else "")
         tile = "d" + ("" if it["campus"] == "spp" else " " + it["campus"])
         end = it["end"] or (s + timedelta(hours=1))
         if it["all_day"]:
