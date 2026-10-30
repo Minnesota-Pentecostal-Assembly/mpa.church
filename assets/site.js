@@ -2,16 +2,28 @@
 // Paste your Measurement ID between the quotes, e.g. 'G-ABC123XYZ9'.
 // Leave it empty to turn tracking off. This one line covers every page.
 var GA_MEASUREMENT_ID = 'G-JTJ71YN59F';
+// Analytics loads after the page has finished loading (or as soon as the visitor
+// scrolls, taps or types), so it never slows down the first view of the page.
 (function () {
   if (!GA_MEASUREMENT_ID) return;
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_MEASUREMENT_ID);
-  document.head.appendChild(s);
   window.dataLayer = window.dataLayer || [];
   window.gtag = function () { window.dataLayer.push(arguments); };
   window.gtag('js', new Date());
   window.gtag('config', GA_MEASUREMENT_ID);
+  var started = false;
+  var events = ['scroll', 'pointerdown', 'keydown', 'touchstart'];
+  function start() {
+    if (started) return;
+    started = true;
+    events.forEach(function (e) { window.removeEventListener(e, start, true); });
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_MEASUREMENT_ID);
+    document.head.appendChild(s);
+  }
+  events.forEach(function (e) { window.addEventListener(e, start, { capture: true, passive: true, once: true }); });
+  function later() { setTimeout(start, 3500); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
 })();
 
 // ===== Shared header and footer =====
