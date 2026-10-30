@@ -26,7 +26,7 @@ MAX_EVENTS = 24          # most events to list
 DESC_CHARS = 220         # longest description shown
 
 # Events already shown in the Regular schedule panel are hidden (title contains, lower case).
-HIDE_TITLE_WORDS = ["english service", "international service"]
+HIDE_TITLE_WORDS = []
 
 # Events that repeat every week (e.g. prayer meetings) are shown once, at their next date,
 # with a note like "Every Thursday", so they don't fill up the list.
