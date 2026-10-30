@@ -42,26 +42,32 @@ jobs:
           echo "Chicago offset $offset, run=$run"
           echo "run=$run" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: steps.season.outputs.run == 'yes'
+
+      # Its own Python, so installing the calendar tools works on any Ubuntu version.
+      - uses: actions/setup-python@v6
+        if: steps.season.outputs.run == 'yes'
+        with:
+          python-version: "3.15"
 
       - name: Fetch latest posts
         if: steps.season.outputs.run == 'yes'
-        run: python3 .github/scripts/update_blog.py
+        run: python .github/scripts/update_blog.py
 
       - name: Fetch latest YouTube video
         if: steps.season.outputs.run == 'yes'
-        run: python3 .github/scripts/update_sermon.py
+        run: python .github/scripts/update_sermon.py
 
       - name: Install calendar tools
         if: steps.season.outputs.run == 'yes'
-        run: pip install --quiet icalendar recurring_ical_events
+        run: python -m pip install --quiet icalendar recurring_ical_events
 
       - name: Fetch upcoming events
         if: steps.season.outputs.run == 'yes'
         env:
           PCO_ICAL_URL: ${{ secrets.PCO_ICAL_URL }}
-        run: python3 .github/scripts/update_events.py
+        run: python .github/scripts/update_events.py
 
       - name: Commit if changed
         if: steps.season.outputs.run == 'yes'
