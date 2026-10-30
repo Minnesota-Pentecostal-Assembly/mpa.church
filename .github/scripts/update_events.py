@@ -25,7 +25,7 @@ DAYS_AHEAD = 62          # how far ahead to look
 MAX_EVENTS = 24          # most events to list
 DESC_CHARS = 220         # longest description shown
 
-# Events already shown in the Regular schedule panel are hidden (title contains, lower case).
+# Any event whose title contains one of these words is hidden (lower case).
 HIDE_TITLE_WORDS = []
 
 # Events that repeat every week (e.g. prayer meetings) are shown once, at their next date,
@@ -216,7 +216,7 @@ def collect(ics_bytes):
                 campus = "online"
         items.append({
             "title": title, "start": start, "end": end, "all_day": all_day,
-            "location": location, "desc": desc, "campus": campus, "repeat": "",
+            "location": location, "desc": desc, "campus": campus, "repeat": "", "rrule": "",
         })
     items.sort(key=lambda i: (i["start"], i["title"]))
 
@@ -236,6 +236,7 @@ def collect(ics_bytes):
                 first = starts[0]
                 days = {x.weekday() for x in starts if x < first + timedelta(days=7)}
                 it["repeat"] = weekday_note(days)
+                it["rrule"] = "FREQ=WEEKLY;BYDAY=" + ",".join(["MO", "TU", "WE", "TH", "FR", "SA", "SU"][d] for d in sorted(days))
                 keep.append(it)
         items = keep
     return items[:MAX_EVENTS]
@@ -268,7 +269,9 @@ def render(items):
         out.append(
             f'      <li data-c="{it["campus"]}" data-end="{utc_stamp(end)}"'
             f' data-title="{e(it["title"])}" data-start="{cal_start}" data-stop="{cal_end}"'
-            f' data-loc="{e(it["location"])}" data-desc="{e(it["desc"])}">'
+            f' data-loc="{e(it["location"])}" data-desc="{e(it["desc"])}"'
+            + (f' data-rrule="{it["rrule"]}" data-lstart="{s:%Y%m%dT%H%M%S}" data-lstop="{end:%Y%m%dT%H%M%S}"'
+               if it["rrule"] and not it["all_day"] else "") + '>'
             f'<span class="{tile}"><b>{s.day}</b>{s:%a}</span>'
             f'<div><strong>{e(it["title"])}</strong><span>{meta}</span>{desc}</div>'
             f'<span class="addwrap"><button type="button" class="add" aria-expanded="false" '

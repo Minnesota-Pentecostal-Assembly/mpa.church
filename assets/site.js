@@ -346,8 +346,12 @@ loadPartials().then(function () {
 
   function links(d) {
     var allDay = d.start.length === 8;
+    var rep = d.rrule && d.lstart;   // weekly event: add as repeating, in Minnesota time
+    var TZ = 'America/Chicago';
+    var gDates = rep ? d.lstart + '/' + d.lstop : d.start + '/' + d.stop;
     var g = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
-      '&text=' + encodeURIComponent(d.title) + '&dates=' + d.start + '/' + d.stop +
+      '&text=' + encodeURIComponent(d.title) + '&dates=' + gDates +
+      (rep ? '&ctz=' + TZ + '&recur=' + encodeURIComponent('RRULE:' + d.rrule) : '') +
       '&details=' + encodeURIComponent(d.desc || '') + '&location=' + encodeURIComponent(d.loc || '');
     function iso(v) {
       return allDay ? v.slice(0, 4) + '-' + v.slice(4, 6) + '-' + v.slice(6, 8)
@@ -356,14 +360,20 @@ loadPartials().then(function () {
     var o = 'https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent' +
       '&subject=' + encodeURIComponent(d.title) + '&startdt=' + iso(d.start) + '&enddt=' + iso(d.stop) +
       (allDay ? '&allday=true' : '') + '&body=' + encodeURIComponent(d.desc || '') + '&location=' + encodeURIComponent(d.loc || '');
-    var dt = allDay ? ';VALUE=DATE:' : ':';
-    var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MPA Church//Website//EN', 'BEGIN:VEVENT',
-      'UID:' + d.start + '-' + d.title.replace(/\W+/g, '') + '@mpa.church',
-      'DTSTAMP:' + now, 'DTSTART' + dt + d.start, 'DTEND' + dt + d.stop,
-      'SUMMARY:' + icsEsc(d.title), 'LOCATION:' + icsEsc(d.loc), 'DESCRIPTION:' + icsEsc(d.desc),
-      'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-    var a = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-    return [['Google Calendar', g, ''], ['Apple / iPhone', a, d.title.replace(/[^\w ]+/g, '').trim() + '.ics'], ['Outlook', o, '']];
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MPA Church//Website//EN', 'BEGIN:VEVENT',
+      'UID:' + d.start + '-' + d.title.replace(/\W+/g, '') + '@mpa.church', 'DTSTAMP:' + now];
+    if (rep) {
+      lines.push('DTSTART;TZID=' + TZ + ':' + d.lstart, 'DTEND;TZID=' + TZ + ':' + d.lstop, 'RRULE:' + d.rrule);
+    } else {
+      var dt = allDay ? ';VALUE=DATE:' : ':';
+      lines.push('DTSTART' + dt + d.start, 'DTEND' + dt + d.stop);
+    }
+    lines.push('SUMMARY:' + icsEsc(d.title), 'LOCATION:' + icsEsc(d.loc), 'DESCRIPTION:' + icsEsc(d.desc),
+      'END:VEVENT', 'END:VCALENDAR');
+    var a = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
+    return [['Google Calendar' + (rep ? ' (repeats weekly)' : ''), g, ''],
+      ['Apple / iPhone' + (rep ? ' (repeats weekly)' : ''), a, d.title.replace(/[^\w ]+/g, '').trim() + '.ics'],
+      ['Outlook' + (rep ? ' (next date only)' : ''), o, '']];
   }
 
   box.addEventListener('click', function (e) {

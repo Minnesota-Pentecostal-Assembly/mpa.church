@@ -34,6 +34,10 @@ jobs:
         uses: actions/checkout@v6
       - name: Setup Pages
         uses: actions/configure-pages@v6
+      - name: Update sitemap
+        run: python3 .github/scripts/make_sitemap.py
+      - name: Build header and footer into pages
+        run: python3 .github/scripts/inline_partials.py
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
