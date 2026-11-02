@@ -12,7 +12,12 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 
-FEED_URL = "http://feeds.feedburner.com/tinkuthompson"
+# Read the blog directly from Blogger (new posts show up right away);
+# FeedBurner is only a fallback because it can lag hours behind.
+FEED_URLS = [
+    "https://tinkuthompson.blogspot.com/feeds/posts/default?max-results=10",
+    "http://feeds.feedburner.com/tinkuthompson",
+]
 POSTS_TO_SHOW = 8
 PAGE = "team.html"
 
@@ -58,7 +63,9 @@ def parse_feed(data):
             link = (it.findtext("link") or "").strip()
             date = parse_date(it.findtext("pubDate"))
             posts.append((title, link, date))
-    return [p for p in posts if p[0] and p[1]][:POSTS_TO_SHOW]
+    posts = [p for p in posts if p[0] and p[1]]
+    posts.sort(key=lambda p: p[2].timestamp() if p[2] else 0, reverse=True)  # newest first
+    return posts[:POSTS_TO_SHOW]
 
 
 def render(posts):
@@ -73,11 +80,16 @@ def render(posts):
 
 
 def main():
-    try:
-        posts = parse_feed(fetch(FEED_URL))
-    except Exception as err:  # network or XML problem: keep the current list
-        print(f"Could not read feed, leaving page unchanged: {err}")
-        return 0
+    posts = []
+    for url in FEED_URLS:
+        try:
+            posts = parse_feed(fetch(url))
+        except Exception as err:  # network or XML problem: try the next feed
+            print(f"Could not read {url}: {err}")
+            continue
+        if posts:
+            print(f"Read {len(posts)} posts from {url}")
+            break
     if not posts:
         print("Feed had no posts, leaving page unchanged.")
         return 0
