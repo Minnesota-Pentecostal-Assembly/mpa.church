@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- This page can be shown at any address, so links are resolved from the site root. -->
+<base href="/">
+<script>
+/* Old addresses: before showing "Page not found", try to find the matching page.
+   Handles old-style addresses from the previous site, such as /contact-us/ (trailing slash),
+   /Give.html, /old/folder/events, and a few old page names (edit ALIASES below to add more). */
+(function () {
+  var ALIASES = {
+    'about': 'learn-more', 'about-us': 'learn-more', 'who-we-are': 'welcome-to-mpa',
+    'contact': 'contact-us', 'donate': 'give', 'giving': 'give', 'online-giving': 'give',
+    'watch': 'live', 'watch-live': 'live', 'live-stream': 'live', 'livestream': 'live',
+    'calendar': 'events', 'kids': 'childrens-ministry', 'children': 'childrens-ministry',
+    'beliefs': 'belief', 'our-beliefs': 'belief', 'statement-of-faith': 'belief',
+    'our-story': 'history', 'pastors': 'team', 'our-team': 'team', 'staff': 'team',
+    'new': 'im-new', 'visit': 'im-new', 'plan-your-visit': 'im-new',
+    'feed': '', 'home': '', 'index': '', 'wp-admin': '', 'wp-login.php': ''
+  };
+  var path = location.pathname.toLowerCase().replace(/\/index\.(html?|php)$/, '/').replace(/\.html?$/, '');
+  var parts = path.split('/').filter(Boolean);
+  if (!parts.length) { if (location.pathname !== '/') location.replace('/' + location.search + location.hash); return; }
+  var last = parts[parts.length - 1];
+  var candidates = [];
+  if (last in ALIASES) candidates.push(ALIASES[last]);
+  candidates.push(last);
+  var tail = location.search + location.hash;
+  var here = location.pathname;
+  document.documentElement.style.visibility = 'hidden';
+  var shown = false;
+  function show() { if (!shown) { shown = true; document.documentElement.style.visibility = ''; } }
+  setTimeout(show, 1500);
+  (function next(i) {
+    if (i >= candidates.length) return show();
+    var target = '/' + candidates[i];
+    if (target === here) return next(i + 1);
+    if (target === '/') return location.replace('/' + tail);
+    fetch(target, { method: 'HEAD' }).then(function (r) {
+      if (r.ok && r.url.indexOf('404') === -1) location.replace(target + tail); else next(i + 1);
+    }).catch(function () { next(i + 1); });
+  })(0);
+})();
+</script>
+<title>Page not found | MPA Church</title>
+<meta name="description" content="Sorry, we couldn't find that page on the MPA Church website.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#07182b">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/images/churchlogo-64.png">
+<link rel="apple-touch-icon" href="assets/images/churchlogo-apple.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header" data-include="partials/header.html"></header>
+<main id="main">
+<section class="page-hero"><div class="wrap"><h1>Page not found</h1><p>Sorry, we couldn&rsquo;t find that page. It may have moved, or the link may be mistyped.</p></div></section>
+
+<section class="block"><div class="wrap">
+  <div class="nf">
+    <h2>Where would you like to go?</h2>
+    <ul class="nf-links">
+      <li><a href="./"><strong>Home</strong><span>Service times and what&rsquo;s happening</span></a></li>
+      <li><a href="im-new"><strong>I&rsquo;m New</strong><span>Plan your first visit</span></a></li>
+      <li><a href="events"><strong>Events</strong><span>Regular schedule and upcoming events</span></a></li>
+      <li><a href="locations"><strong>Locations</strong><span>St. Paul Park, Bloomington and Rochester</span></a></li>
+      <li><a href="live"><strong>Watch live</strong><span>Join a service online</span></a></li>
+      <li><a href="give"><strong>Give</strong><span>Support the mission</span></a></li>
+      <li><a href="contact-us"><strong>Contact us</strong><span>We&rsquo;re happy to help</span></a></li>
+    </ul>
+  </div>
+</div></section>
+</main>
+<footer class="site-footer" data-include="partials/footer.html" data-motto="off"></footer>
+<script src="assets/site.js" defer></script>
+</body>
+</html>

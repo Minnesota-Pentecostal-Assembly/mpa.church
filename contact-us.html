@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact Us | MPA Church</title>
+<meta name="description" content="Contact MPA Church by phone, email or message.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MPA Church">
+<meta property="og:title" content="Contact Us | MPA Church">
+<meta property="og:description" content="Contact MPA Church by phone, email or message.">
+<meta property="og:url" content="https://mpa.church/contact-us">
+<meta property="og:image" content="https://mpa.church/assets/images/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MPA Church: Making disciples who will make disciples. Twin Cities, Minnesota.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#07182b">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/images/churchlogo-64.png">
+<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="partials/header.html" as="fetch" crossorigin>
+<link rel="apple-touch-icon" href="assets/images/churchlogo-apple.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header" data-include="partials/header.html" data-nav="learn"></header>
+<main id="main">
+<section class="page-hero"><div class="wrap"><h1>Contact Us</h1><p>We would love to hear from you.</p></div></section>
+
+<section class="block"><div class="wrap split" style="align-items:start">
+  <div class="reveal">
+    <h2>Send us a message</h2>
+    <form id="contact-form" class="card" style="gap:1rem">
+      <label>Name *<br><input required name="name" style="width:100%;padding:.8rem;border:1px solid var(--line);border-radius:12px;font:inherit"></label>
+      <label>Email *<br><input required type="email" name="email" style="width:100%;padding:.8rem;border:1px solid var(--line);border-radius:12px;font:inherit"></label>
+      <label>Interested in<br><select name="interest" style="width:100%;padding:.8rem;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fff">
+        <option>Hindi Service</option><option>English Service</option><option>International Service</option><option>Sunday School</option><option>Life Groups</option></select></label>
+      <label>Message<br><textarea name="message" rows="5" style="width:100%;padding:.8rem;border:1px solid var(--line);border-radius:12px;font:inherit"></textarea></label>
+      <button class="btn btn-dark" type="submit">Send message</button>
+      <p id="form-note" class="note" hidden>Your email app should open with the message ready to send. If it does not, write to <a href="mailto:contact@mpa.church">contact@mpa.church</a>.</p>
+    </form>
+  </div>
+  <div class="panel reveal">
+    <h3>Visit us</h3>
+    <p>Contact us if you need more details before visiting.</p>
+    <ul class="list-clean">
+      <li><b>Phone</b><span><a href="tel:+16513213015">+1 (651) 321-3015</a></span></li>
+      <li><b>Email</b><span><a href="mailto:contact@mpa.church">contact@mpa.church</a></span></li>
+      <li><b>Address</b><span><a href="https://maps.app.goo.gl/d9XnRjjTuKzDh9xv8" target="_blank" rel="noopener">700 Summit Ave, St Paul Park, MN 55071</a></span></li>
+    </ul>
+  </div>
+</div></section>
+<section class="block alt"><div class="wrap"><div class="cal-wrap map-wrap reveal">
+    <div class="cal-banner map-banner">
+      <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <div><h2 id="find-us">Find Us</h2><p>Minnesota Pentecostal Assembly &middot; 700 Summit Ave, St Paul Park, MN 55071</p></div>
+      <a class="btn btn-accent btn-sm map-dir" href="https://maps.app.goo.gl/d9XnRjjTuKzDh9xv8" target="_blank" rel="noopener">Get directions</a>
+    </div>
+    <div class="map-embed"><iframe title="Map of Minnesota Pentecostal Assembly in St. Paul Park" src="https://www.google.com/maps/embed?pb=!1m16!1m10!1m3!1d200!2d-92.99140691783083!3d44.84577426473661!2m1!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x87f7d1a6e955936d%3A0xfd99501cfe5ea977!2sMinnesota%20Pentecostal%20Assembly!5e0!3m2!1sen!2sus!4v1793139291732!5m2!1sen!2sus" width="100%" height="440" style="display:block;width:100%;height:440px;border:0" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+  </div></div></section>
+</main>
+<footer class="site-footer" data-include="partials/footer.html"></footer>
+<script src="assets/site.js" defer></script>
+<script>
+document.getElementById('contact-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var f = new FormData(e.target);
+  var body = 'Name: ' + f.get('name') + '\nEmail: ' + f.get('email') + '\nInterested in: ' + f.get('interest') + '\n\n' + f.get('message');
+  window.location.href = 'mailto:contact@mpa.church?subject=' + encodeURIComponent('Website message from ' + f.get('name')) + '&body=' + encodeURIComponent(body);
+  document.getElementById('form-note').hidden = false;
+});
+</script>
+</body>
+</html>
