@@ -691,6 +691,14 @@ section.block.wl-vision{padding-bottom:1.5rem}
   .pdetail .pd-sub { align-self: end; margin-top: .3rem; }
 }
 
+/* Welcome pillars: title first, then the "Service to ..." line under it */
+.pdetail h2{margin:.1rem 0 .25rem}
+.pdetail .pd-sub{display:block;margin:0 0 .9rem}
+@media (max-width: 860px) {
+  .pdetail h2 { grid-row: 1; align-self: end; margin: 0; }
+  .pdetail .pd-sub { grid-row: 2; align-self: start; margin: .3rem 0 0; }
+}
+
 /* Privacy page */
 .privacy ul { padding-left: 1.2rem; line-height: 1.7; }
 .privacy li { margin-bottom: .35rem; }
@@ -803,8 +811,8 @@ section.block.wl-vision{padding-bottom:1.5rem}
 /* Make sure anything marked hidden stays hidden, even with display rules above (events filter) */
 [hidden]{display:none!important}
 
-/* Belief cards on phones: number and title on one line, text full width below */
-@media (max-width: 760px){
+/* Belief cards on phones and tablets: number and title on one line, text full width below */
+@media (max-width: 900px){
   .bf-item{grid-template-columns:2.6rem 1fr;column-gap:.6rem;row-gap:0}
   .bf-item>div{display:contents}
   .bf-num{grid-column:1;align-self:center;font-size:2.2rem;line-height:1}
@@ -822,3 +830,17 @@ section.block.wl-vision{padding-bottom:1.5rem}
 .nf-links strong{display:block;font-family:var(--display);color:var(--ink);font-size:1.1rem}
 .nf-links span{color:var(--muted);font-size:.93rem}
 @media (max-width:640px){.nf-links{grid-template-columns:1fr}}
+
+/* ---- Tablet alignment (Nov 2026) ---- */
+/* Three-card rows: always three across from tablet up, one column on phones (no lone card on a second row) */
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 700px) { .g3 { grid-template-columns: 1fr; } }
+/* Home service times: four across on desktop, a tidy 2 x 2 on tablets */
+@media (min-width: 561px) and (max-width: 980px) { .times { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Team campus cards: smaller photo on tablets so the text column has room */
+@media (min-width: 561px) and (max-width: 980px) {
+  .person { grid-template-columns: 96px 1fr; gap: 1rem; align-items: start; }
+}
+/* Campus cards: social icons and "Get directions" line up across cards whatever the text length */
+.card .soc-row { margin-top: auto; padding-top: 1rem; }
+.card .soc-row + .more { margin-top: 1rem; }

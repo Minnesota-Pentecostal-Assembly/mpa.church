@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QR Code Generator | MPA Church</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#07182b">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/images/churchlogo-64.png">
+<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="apple-touch-icon" href="assets/images/churchlogo-apple.png">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+.qr-lock{max-width:440px;margin:0 auto;gap:1rem}
+.qr-lock h2{font-size:1.5rem;margin:0}
+.qr-lock p{margin:0}
+.qr-lock label{display:block;font-weight:600;color:var(--ink)}
+.qr-lock input{width:100%;margin-top:.4rem;padding:.8rem;border:1px solid var(--line);border-radius:12px;font:inherit;font-weight:400;background:#fff}
+.qr-lock input:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.qr-lock .btn{width:100%;justify-content:center}
+.qr-lock .btn:active{transform:scale(.97)}
+.qr-err{color:var(--crimson);font-size:.92rem;min-height:1.4em}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header" data-include="partials/header.html"></header>
+<main id="main">
+<section class="page-hero"><div class="wrap"><h1>QR Code Generator</h1><p>Make QR codes for church flyers, slides and signs.</p></div></section>
+
+<section class="block"><div class="wrap" id="qr-app">
+  <form class="card qr-lock" id="qr-unlock" autocomplete="off">
+    <h2>Staff only</h2>
+    <p id="qr-msg">Enter the password to use this page.</p>
+    <label>Password<input type="password" id="qr-pass" autocomplete="current-password" required></label>
+    <button class="btn btn-dark" type="submit" id="qr-go">Unlock</button>
+    <p class="qr-err" id="qr-err" aria-live="polite"></p>
+  </form>
+</div></section>
+</main>
+<footer class="site-footer" data-include="partials/footer.html"></footer>
+<!-- QR:PAYLOAD --><!-- /QR:PAYLOAD -->
+<script>
+(function(){
+  var KEY = "mpa-qr-pass";
+  var form = document.getElementById("qr-unlock"), err = document.getElementById("qr-err"), go = document.getElementById("qr-go");
+  var el = document.getElementById("qr-payload");
+  if (!el) {
+    document.getElementById("qr-msg").textContent = "This page has not been set up yet.";
+    form.querySelector("label").hidden = true; go.hidden = true;
+    return;
+  }
+  var data = JSON.parse(el.textContent);
+  function bytes(b64){ var s = atob(b64), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+
+  function unlock(pass){
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey("raw", enc.encode(pass.normalize("NFC")), "PBKDF2", false, ["deriveKey"])
+      .then(function(base){ return crypto.subtle.deriveKey({ name: "PBKDF2", salt: bytes(data.salt), iterations: data.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]); })
+      .then(function(key){ return crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes(data.iv) }, key, bytes(data.ct)); })
+      .then(function(buf){ return new TextDecoder().decode(buf); });
+  }
+  function show(html){
+    var app = document.getElementById("qr-app");
+    app.innerHTML = html;
+    // Scripts added with innerHTML do not run, so recreate them
+    Array.prototype.forEach.call(app.querySelectorAll("script"), function(old){
+      var s = document.createElement("script"); s.textContent = old.textContent; old.parentNode.replaceChild(s, old);
+    });
+  }
+  function attempt(pass, remembered){
+    go.disabled = true; go.textContent = "Unlocking…"; err.textContent = "";
+    unlock(pass).then(function(html){
+      try { sessionStorage.setItem(KEY, pass); } catch (e) {}
+      show(html);
+    }, function(){
+      try { sessionStorage.removeItem(KEY); } catch (e) {}
+      go.disabled = false; go.textContent = "Unlock";
+      if (!remembered) { err.textContent = "That password did not work. Please try again."; document.getElementById("qr-pass").select(); }
+    });
+  }
+  if (!window.crypto || !crypto.subtle) { err.textContent = "This browser cannot open this page. Please use an up-to-date browser."; go.disabled = true; return; }
+  form.addEventListener("submit", function(e){ e.preventDefault(); var p = document.getElementById("qr-pass").value; if (p) attempt(p, false); });
+  // Stay unlocked in this tab until it is closed
+  var saved = null; try { saved = sessionStorage.getItem(KEY); } catch (e) {}
+  if (saved) attempt(saved, true);
+})();
+</script>
+<script src="assets/site.js" defer></script>
+</body>
+</html>

@@ -38,6 +38,11 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.15"
+      - name: Lock the QR code page
+        # Encrypts the staff QR code generator with the QR_PAGE_PASSWORD secret (see .github/scripts/encrypt_qr.mjs)
+        env:
+          QR_PAGE_PASSWORD: ${{ secrets.QR_PAGE_PASSWORD }}
+        run: node .github/scripts/encrypt_qr.mjs
       - name: Update sitemap
         run: python .github/scripts/make_sitemap.py
       - name: Build header and footer into pages

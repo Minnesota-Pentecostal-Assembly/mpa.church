@@ -1,0 +1,479 @@
+<!--
+  MPA QR code generator: the tool itself (shown after the password is entered).
+  Same features as the inside page's QR code maker, in the main site's design:
+  link, text, Wi-Fi, email or phone; church logo or an uploaded image in the middle; colour presets,
+  gradients, corner colours, background or transparent; dot and corner shapes; border; error correction;
+  live scan check; PNG (512 / 1024 / 2048 px) or SVG download. Uploads never leave the device.
+
+  This folder starts with a dot, so GitHub Pages never publishes it. At deploy time
+  .github/scripts/encrypt_qr.mjs fills in the QR library and the church logo (the two double-brace placeholders below), encrypts this file with the
+  QR_PAGE_PASSWORD secret and puts it inside qr.html.
+  QR encoding: qrcode-generator 1.5.2 (MIT). Scan check: jsQR 1.4.0 (Apache-2.0), assets/vendor/jsqr.min.js, loaded on demand.
+-->
+<style>
+.qr-tool{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);grid-template-areas:"content preview" "options preview";gap:1.2rem 1.6rem;align-items:start}
+.qr-tool>.qa{grid-area:content}.qr-tool>.qb{grid-area:options;display:grid;gap:1.2rem}.qr-tool>.qp{grid-area:preview}
+.qr-tool .card{gap:0}
+.qr-tool .card:hover{transform:none;box-shadow:none}
+.qr-tool h2{font-size:1.25rem;margin:0 0 .2rem}
+.qf{margin-top:1rem}
+.qf>.ql{display:block;font-weight:600;color:var(--ink);font-size:.95rem;margin-bottom:.45rem}
+.qr-tool input[type=text],.qr-tool input[type=url],.qr-tool input[type=email],.qr-tool input[type=tel],.qr-tool textarea,.qr-tool select{width:100%;padding:.75rem .8rem;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fff;color:var(--text)}
+.qr-tool textarea{resize:vertical;min-height:110px}
+.qr-tool select{min-height:46px}
+.qr-tool input:focus-visible,.qr-tool textarea:focus-visible,.qr-tool select:focus-visible,.qr-tool button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.qr-tool .hint{margin:.4rem 0 0;font-size:.88rem;color:var(--muted)}
+.qr-tool input[type=range]{width:100%;accent-color:var(--ink);height:28px}
+.qr-tool .qrange{display:flex;align-items:center;gap:.8rem}
+.qr-tool .qrange output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
+.qseg{display:flex;flex-wrap:wrap;gap:.45rem}
+.qseg button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:.5rem .95rem;font:600 .9rem var(--sans);color:var(--ink);cursor:pointer;min-height:40px;transition:background-color .15s,color .15s,border-color .15s,transform .15s}
+.qseg button:active{transform:scale(.96)}
+.qseg button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.qrow{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem}
+.qrow[hidden]{display:none}
+.qr-tool input[type=color]{width:46px;height:46px;padding:3px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+.qr-tool input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.qr-tool input[type=color]::-webkit-color-swatch{border:0;border-radius:8px}
+.qr-tool input[type=color]::-moz-color-swatch{border:0;border-radius:8px}
+.qr-tool input.hex{width:6.4rem;font-variant-numeric:tabular-nums;text-transform:uppercase}
+.qcheck{display:inline-flex;align-items:center;gap:.5rem;font-weight:500;cursor:pointer;min-height:44px}
+.qcheck input{width:20px;height:20px;accent-color:var(--ink);margin:0}
+.qpresets{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:.55rem}
+.qpresets button{height:64px;padding:0;border-radius:14px;border:2px solid var(--line);cursor:pointer;display:grid;place-items:center;transition:border-color .15s,transform .15s}
+.qpresets button:active{transform:scale(.96)}
+.qpresets button[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
+.qpresets i{display:block;width:28px;height:28px;border-radius:7px}
+.qpname{margin:.5rem 0 0;font-size:.88rem;color:var(--muted);min-height:1.3em}
+.qswatches{display:flex;gap:.4rem}
+.qswatches button{width:40px;height:40px;padding:0;border-radius:10px;border:2px solid var(--line);cursor:pointer}
+.qswatches button[aria-pressed=true]{border-color:var(--ink)}
+.qp{position:sticky;top:96px}
+.qstage{aspect-ratio:1;border-radius:16px;padding:1.1rem;display:flex;align-items:center;justify-content:center;
+  background:repeating-conic-gradient(#efe8db 0% 25%,#f8f3ea 0% 50%) 50% / 20px 20px;box-shadow:inset 0 0 0 1px rgba(7,24,43,.06)}
+.qstage svg{width:100%;height:100%;display:block}
+.qstage .qempty{color:var(--muted);text-align:center;padding:2rem}
+.qinfo{margin:.8rem 0 0;font-size:.88rem;color:var(--muted);min-height:1.3em;font-variant-numeric:tabular-nums}
+.qbad{color:var(--crimson)}
+.qscan{margin-top:.7rem;padding:.7rem .9rem;border-radius:12px;font-size:.92rem;background:rgba(7,24,43,.05);color:var(--text)}
+.qscan.pass{background:#E6F4EC;color:#1D6B43}
+.qscan.part{background:#FFF1DF;color:#8A4A00}
+.qscan.fail{background:#FBE7E9;color:var(--crimson)}
+.qdl{display:grid;grid-template-columns:auto 1fr;gap:.6rem;margin-top:1rem}
+.qdl select{width:auto}
+.qdl .btn{justify-content:center}
+.qdl .btn:active{transform:scale(.97)}
+.qdl .full{grid-column:1/-1}
+.qdl .btn[disabled]{opacity:.45;pointer-events:none}
+.qlock{margin:.9rem 0 0;font-size:.88rem;text-align:center}
+.qlock button{background:none;border:0;padding:.5rem;font:inherit;color:var(--accent-deep);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.qupl{display:none}.qupl.show{display:block}
+@media (max-width:900px){
+  .qr-tool{grid-template-columns:1fr;grid-template-areas:"content" "preview" "options"}
+  .qp{position:static;max-width:460px;width:100%;margin:0 auto}
+}
+@media (max-width:560px){ .qdl{grid-template-columns:1fr} .qdl select{width:100%} }
+</style>
+
+<div class="qr-tool">
+  <section class="card qa">
+    <h2>What the code opens</h2>
+    <div class="qf"><div class="qseg" id="ctype" role="group" aria-label="Type of code">
+      <button type="button" data-v="link">Link</button><button type="button" data-v="text">Text</button><button type="button" data-v="wifi">Wi-Fi</button><button type="button" data-v="email">Email</button><button type="button" data-v="phone">Phone</button>
+    </div></div>
+    <div class="qf" data-panel="link"><label class="ql" for="link">Web address</label><input type="url" id="link" inputmode="url" placeholder="mpa.church/events" value="https://mpa.church" spellcheck="false"><p class="hint">https:// is added for you if it is missing.</p></div>
+    <div class="qf" data-panel="text" hidden><label class="ql" for="text">Text</label><textarea id="text" placeholder="Anything people should see when they scan"></textarea></div>
+    <div data-panel="wifi" hidden>
+      <div class="qf"><label class="ql" for="ssid">Network name</label><input type="text" id="ssid" spellcheck="false"></div>
+      <div class="qf"><label class="ql" for="wpw">Password</label><input type="text" id="wpw" spellcheck="false"></div>
+      <div class="qf"><label class="ql" for="wsec">Security</label><select id="wsec"><option value="WPA">WPA / WPA2 / WPA3</option><option value="WEP">WEP</option><option value="nopass">No password</option></select><p class="hint">Phones join the network straight from the camera.</p></div>
+    </div>
+    <div data-panel="email" hidden>
+      <div class="qf"><label class="ql" for="email">Email address</label><input type="email" id="email" placeholder="contact@mpa.church" spellcheck="false"></div>
+      <div class="qf"><label class="ql" for="subject">Subject (optional)</label><input type="text" id="subject"></div>
+    </div>
+    <div class="qf" data-panel="phone" hidden><label class="ql" for="phone">Phone number</label><input type="tel" id="phone" placeholder="+1 651 321 3015"></div>
+  </section>
+
+  <div class="qb">
+    <section class="card">
+      <h2>Middle image</h2>
+      <div class="qf"><div class="qseg" id="logo" role="group" aria-label="Middle image"><button type="button" data-v="none">None</button><button type="button" data-v="mpa">Church logo</button><button type="button" data-v="upload">Upload</button></div></div>
+      <div class="qf qupl" id="uplF"><label class="ql" for="file">Image</label><input type="file" id="file" accept="image/*"><p class="hint">A PNG with a transparent background looks best. It stays on this device.</p></div>
+      <div class="qf"><label class="ql" for="logoSize">Size</label><div class="qrange"><input type="range" id="logoSize" min="14" max="36" value="30"><output id="logoSizeOut" for="logoSize"></output></div></div>
+      <div class="qf"><span class="ql">Behind the image</span><div class="qseg" id="plate" role="group" aria-label="Behind the image"><button type="button" data-v="square">Square</button><button type="button" data-v="rounded">Rounded</button><button type="button" data-v="circle">Circle</button><button type="button" data-v="none">None</button></div></div>
+    </section>
+
+    <section class="card">
+      <h2>Colours</h2>
+      <div class="qf"><span class="ql">Presets</span><div class="qpresets" id="presets" role="group" aria-label="Colour presets"></div><p class="qpname" id="presetName"></p></div>
+      <div class="qf"><span class="ql">Dots</span>
+        <div class="qseg" id="fill" role="group" aria-label="Dot fill"><button type="button" data-v="solid">Solid</button><button type="button" data-v="linear">Linear gradient</button><button type="button" data-v="radial">Radial gradient</button></div>
+        <div class="qrow" style="margin-top:.7rem">
+          <input type="color" id="c1" value="#07182B" aria-label="Dot colour 1"><input type="text" class="hex" data-for="c1" maxlength="7" aria-label="Dot colour 1 code">
+          <span id="c2Wrap" class="qrow"><input type="color" id="c2" value="#11659B" aria-label="Dot colour 2"><input type="text" class="hex" data-for="c2" maxlength="7" aria-label="Dot colour 2 code"></span>
+        </div>
+        <div class="qf" id="angleWrap"><label class="ql" for="angle">Gradient angle</label><div class="qrange"><input type="range" id="angle" min="0" max="360" value="45"><output id="angleOut" for="angle"></output></div></div>
+      </div>
+      <div class="qf"><span class="ql">Corner squares</span>
+        <div class="qrow"><label class="qcheck"><input type="checkbox" id="eyeSame" checked> Same as dots</label>
+          <span id="eyeCols" class="qrow"><input type="color" id="eyeOuter" value="#A60B1B" aria-label="Corner frame colour"><input type="color" id="eyeInner" value="#07182B" aria-label="Corner centre colour"><span class="hint" style="margin:0">Frame, centre</span></span></div>
+      </div>
+      <div class="qf"><span class="ql">Background</span>
+        <div class="qseg" id="bgMode" role="group" aria-label="Background"><button type="button" data-v="color">Colour</button><button type="button" data-v="transparent">Transparent</button></div>
+        <div class="qrow" id="bgPick" style="margin-top:.7rem"><div class="qswatches" id="bgSw"></div><input type="color" id="bg" value="#FFFFFF" aria-label="Background colour"><input type="text" class="hex" data-for="bg" maxlength="7" aria-label="Background colour code"></div>
+        <p class="hint" id="bgNote" hidden>Transparent PNG or SVG: place it on a light, plain background so it still scans.</p>
+      </div>
+      <p class="hint" id="contrast" aria-live="polite"></p>
+    </section>
+
+    <section class="card">
+      <h2>Shape</h2>
+      <div class="qf"><span class="ql">Dots</span><div class="qseg" id="dot" role="group" aria-label="Dot shape"><button type="button" data-v="square">Square</button><button type="button" data-v="rounded">Rounded</button><button type="button" data-v="dots">Dots</button><button type="button" data-v="diamond">Diamond</button></div></div>
+      <div class="qf"><span class="ql">Corner frame</span><div class="qseg" id="eyeO" role="group" aria-label="Corner frame shape"><button type="button" data-v="square">Square</button><button type="button" data-v="rounded">Rounded</button><button type="button" data-v="circle">Circle</button></div></div>
+      <div class="qf"><span class="ql">Corner centre</span><div class="qseg" id="eyeI" role="group" aria-label="Corner centre shape"><button type="button" data-v="square">Square</button><button type="button" data-v="rounded">Rounded</button><button type="button" data-v="circle">Circle</button></div></div>
+      <div class="qf"><label class="ql" for="margin">Border</label><div class="qrange"><input type="range" id="margin" min="0" max="8" value="4"><output id="marginOut" for="margin"></output></div><p class="hint">The white space around the code. 4 is the standard.</p></div>
+      <div class="qf"><label class="ql" for="ecl">Error correction</label><select id="ecl"><option value="auto">Automatic</option><option value="L">Low (7%)</option><option value="M">Medium (15%)</option><option value="Q">Quartile (25%)</option><option value="H">High (30%)</option></select><p class="hint">Higher survives a middle image or damage, but adds dots.</p></div>
+    </section>
+  </div>
+
+  <div class="qp">
+    <section class="card">
+      <div class="qstage" id="stage"></div>
+      <p class="qinfo" id="info"></p>
+      <div class="qscan" id="scan" role="status">Scan check: starting…</div>
+      <div class="qdl">
+        <select id="px" aria-label="PNG size"><option value="512">512 px</option><option value="1024" selected>1024 px</option><option value="2048">2048 px (print)</option></select>
+        <button class="btn btn-dark" type="button" id="dlPng">Download PNG</button>
+        <button class="btn btn-outline full" type="button" id="dlSvg">Download SVG</button>
+      </div>
+      <p class="hint">Always test-scan with a phone before printing, especially with gradients, light colours or a large middle image.</p>
+      <p class="qlock"><button type="button" id="qr-lock">Lock this page</button></p>
+    </section>
+  </div>
+</div>
+
+<script>
+/* qrcode-generator 1.5.2, Copyright (c) 2009 Kazuhiko Arase, MIT licence */
+{{QRLIB}}
+</script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var each = function (list, fn) { Array.prototype.forEach.call(list, fn); };
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+  var MPA_LOGO = "{{LOGO}}";
+
+  var PRESETS = [
+    { name: 'Most reliable', c1: '#07182B', c2: '#07182B', fill: 'solid', eye: true, eo: '#07182B', ei: '#07182B', bg: '#FFFFFF', dot: 'rounded', eyeO: 'square', eyeI: 'square', logo: 24, margin: 4, plate: 'rounded' },
+    { name: 'MPA ink', c1: '#07182B', c2: '#07182B', fill: 'solid', eye: true, eo: '#07182B', ei: '#07182B', bg: '#FFFFFF' },
+    { name: 'MPA blue', c1: '#11659B', c2: '#07182B', fill: 'linear', eye: false, eo: '#07182B', ei: '#11659B', bg: '#FFFFFF' },
+    { name: 'Crimson to orange', c1: '#A60B1B', c2: '#FE8005', fill: 'linear', eye: false, eo: '#A60B1B', ei: '#A60B1B', bg: '#FFFFFF' },
+    { name: 'Brand mix', c1: '#07182B', c2: '#11659B', fill: 'radial', eye: false, eo: '#A60B1B', ei: '#FE8005', bg: '#FFFFFF' },
+    { name: 'Parchment', c1: '#55250F', c2: '#8A3E14', fill: 'linear', eye: true, eo: '#55250F', ei: '#55250F', bg: '#EFE6D4' },
+    { name: 'Night', c1: '#FFFFFF', c2: '#FFB36B', fill: 'linear', eye: false, eo: '#FFB36B', ei: '#FFFFFF', bg: '#07182B' },
+    { name: 'Classic', c1: '#000000', c2: '#000000', fill: 'solid', eye: true, eo: '#000000', ei: '#000000', bg: '#FFFFFF' }
+  ];
+  var BG_SW = [['#FFFFFF', 'White'], ['#FAF6EF', 'Cream'], ['#EFE6D4', 'Parchment'], ['#E8F1F8', 'Light blue'], ['#07182B', 'Navy'], ['#000000', 'Black']];
+  var S = { ctype: 'link', logo: 'mpa', plate: 'rounded', fill: 'solid', dot: 'rounded', eyeO: 'rounded', eyeI: 'rounded', bgMode: 'color' };
+  var uploaded = null, lastSvg = '';
+
+  // ---------- helpers ----------
+  function esc(s) { return String(s).replace(/[\\;,:"]/g, '\\$&'); }
+  function content() {
+    var v;
+    switch (S.ctype) {
+      case 'wifi':
+        if (!$('ssid').value) return '';
+        var sec = $('wsec').value;
+        return 'WIFI:T:' + sec + ';S:' + esc($('ssid').value) + ';' + (sec === 'nopass' ? '' : 'P:' + esc($('wpw').value) + ';') + ';';
+      case 'text': return $('text').value;
+      case 'email':
+        v = $('email').value.trim(); if (!v) return '';
+        var sub = $('subject').value.trim();
+        return 'mailto:' + v + (sub ? '?subject=' + encodeURIComponent(sub) : '');
+      case 'phone':
+        v = $('phone').value.replace(/[^\d+]/g, ''); return v ? 'tel:' + v : '';
+      default:
+        v = $('link').value.trim(); if (!v) return '';
+        return /^[a-z][a-z0-9+.-]*:/i.test(v) ? v : 'https://' + v;
+    }
+  }
+  function lum(hex) {
+    var c = hex.replace('#', ''), v = [0, 2, 4].map(function (i) { var x = parseInt(c.substr(i, 2), 16) / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+  }
+  function ratio(a, b) { var A = lum(a), B = lum(b); return (Math.max(A, B) + 0.05) / (Math.min(A, B) + 0.05); }
+  function n(x) { return Math.round(x * 1000) / 1000; }
+  function rr(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    return 'M' + n(x + r) + ' ' + n(y) + 'H' + n(x + w - r) + 'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x + w) + ' ' + n(y + r) +
+      'V' + n(y + h - r) + 'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x + w - r) + ' ' + n(y + h) + 'H' + n(x + r) +
+      'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x) + ' ' + n(y + h - r) + 'V' + n(y + r) + 'A' + n(r) + ' ' + n(r) + ' 0 0 1 ' + n(x + r) + ' ' + n(y) + 'Z';
+  }
+  function circ(cx, cy, r) { return 'M' + n(cx - r) + ' ' + n(cy) + 'a' + n(r) + ' ' + n(r) + ' 0 1 0 ' + n(2 * r) + ' 0a' + n(r) + ' ' + n(r) + ' 0 1 0 ' + n(-2 * r) + ' 0Z'; }
+  // one module whose corners round only where it has no neighbours (smooth "rounded" style)
+  function smartRound(x, y, t, l, b, r) {
+    var k = 0.5, tl = !t && !l ? k : 0, tr = !t && !r ? k : 0, br = !b && !r ? k : 0, bl = !b && !l ? k : 0;
+    return 'M' + n(x + tl) + ' ' + y + 'H' + n(x + 1 - tr) + (tr ? 'A' + tr + ' ' + tr + ' 0 0 1 ' + (x + 1) + ' ' + n(y + tr) : '') +
+      'V' + n(y + 1 - br) + (br ? 'A' + br + ' ' + br + ' 0 0 1 ' + n(x + 1 - br) + ' ' + (y + 1) : '') +
+      'H' + n(x + bl) + (bl ? 'A' + bl + ' ' + bl + ' 0 0 1 ' + x + ' ' + n(y + 1 - bl) : '') +
+      'V' + n(y + tl) + (tl ? 'A' + tl + ' ' + tl + ' 0 0 1 ' + n(x + tl) + ' ' + y : '') + 'Z';
+  }
+  function transparent() { return S.bgMode === 'transparent'; }
+
+  // ---------- build the SVG ----------
+  function build() {
+    var text = content();
+    if (!text) return null;
+    var hasLogo = S.logo === 'mpa' || (S.logo === 'upload' && !!uploaded);
+    var e = $('ecl').value === 'auto' ? (hasLogo ? 'H' : 'M') : $('ecl').value;
+    var q;
+    try { q = qrcode(0, e); q.addData(text, 'Byte'); q.make(); } catch (err) { return { error: 'That is too much to fit in one QR code. Shorten it, or use a link.' }; }
+    var N = q.getModuleCount(), M = +$('margin').value, W = N + 2 * M;
+    var dark = function (r, c) { return r >= 0 && c >= 0 && r < N && c < N && q.isDark(r, c); };
+    var inEye = function (r, c) { return (r < 7 && c < 7) || (r < 7 && c >= N - 7) || (r >= N - 7 && c < 7); };
+
+    // area cleared for the middle image (whole modules, centred)
+    var lf = +$('logoSize').value / 100, lmods = 0, l0 = 0;
+    if (hasLogo) { lmods = Math.round(N * lf); if ((N - lmods) % 2) lmods++; l0 = (N - lmods) / 2; }
+    var inLogo = function (r, c) { return hasLogo && S.plate !== 'none' && r >= l0 - 0.5 && r < l0 + lmods && c >= l0 - 0.5 && c < l0 + lmods; };
+
+    var c1 = $('c1').value, c2 = $('c2').value, bg = $('bg').value;
+    var defs = '', dotFill = c1;
+    if (S.fill !== 'solid') {
+      if (S.fill === 'linear') {
+        var a = (+$('angle').value - 90) * Math.PI / 180, cx = W / 2, R = W / 2;
+        defs += '<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="' + n(cx - Math.cos(a) * R) + '" y1="' + n(cx - Math.sin(a) * R) + '" x2="' + n(cx + Math.cos(a) * R) + '" y2="' + n(cx + Math.sin(a) * R) + '"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></linearGradient>';
+      } else {
+        defs += '<radialGradient id="g" gradientUnits="userSpaceOnUse" cx="' + W / 2 + '" cy="' + W / 2 + '" r="' + n(N * 0.72) + '"><stop offset="0" stop-color="' + c1 + '"/><stop offset="1" stop-color="' + c2 + '"/></radialGradient>';
+      }
+      dotFill = 'url(#g)';
+    }
+    var eyeSame = $('eyeSame').checked, eo = eyeSame ? dotFill : $('eyeOuter').value, ei = eyeSame ? dotFill : $('eyeInner').value;
+
+    // data modules
+    var p = '';
+    for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) {
+      if (!q.isDark(r, c) || inEye(r, c) || inLogo(r, c)) continue;
+      var x = c + M, y = r + M;
+      if (S.dot === 'square') p += 'M' + x + ' ' + y + 'h1.02v1.02h-1.02Z';
+      else if (S.dot === 'dots') p += circ(x + 0.5, y + 0.5, 0.45);
+      else if (S.dot === 'diamond') p += 'M' + n(x + 0.5) + ' ' + n(y - 0.02) + 'L' + n(x + 1.02) + ' ' + n(y + 0.5) + 'L' + n(x + 0.5) + ' ' + n(y + 1.02) + 'L' + n(x - 0.02) + ' ' + n(y + 0.5) + 'Z';
+      else {
+        var nb = function (r2, c2) { return dark(r2, c2) && !inEye(r2, c2) && !inLogo(r2, c2); };
+        p += smartRound(x, y, nb(r - 1, c), nb(r, c - 1), nb(r + 1, c), nb(r, c + 1));
+      }
+    }
+
+    // corner squares
+    var eyesO = '', eyesI = '';
+    [[0, 0], [0, N - 7], [N - 7, 0]].forEach(function (e2) {
+      var x = e2[1] + M, y = e2[0] + M;
+      if (S.eyeO === 'circle') eyesO += circ(x + 3.5, y + 3.5, 3.5) + circ(x + 3.5, y + 3.5, 2.5);
+      else { var ro = S.eyeO === 'rounded' ? 2.2 : 0, ri = S.eyeO === 'rounded' ? 1.5 : 0; eyesO += rr(x, y, 7, 7, ro) + rr(x + 1, y + 1, 5, 5, ri); }
+      if (S.eyeI === 'circle') eyesI += circ(x + 3.5, y + 3.5, 1.5);
+      else eyesI += rr(x + 2, y + 2, 3, 3, S.eyeI === 'rounded' ? 0.9 : 0);
+    });
+
+    // middle image
+    var logoSvg = '';
+    if (hasLogo) {
+      var src = S.logo === 'mpa' ? MPA_LOGO : uploaded, L = lmods, lx = l0 + M, ly = l0 + M;
+      var plateFill = transparent() ? '#FFFFFF' : bg;
+      if (S.plate === 'square') logoSvg += '<rect x="' + lx + '" y="' + ly + '" width="' + L + '" height="' + L + '" fill="' + plateFill + '"/>';
+      else if (S.plate === 'rounded') logoSvg += '<path d="' + rr(lx, ly, L, L, L * 0.22) + '" fill="' + plateFill + '"/>';
+      else if (S.plate === 'circle') logoSvg += '<circle cx="' + n(lx + L / 2) + '" cy="' + n(ly + L / 2) + '" r="' + n(L / 2) + '" fill="' + plateFill + '"/>';
+      var pad = S.plate === 'none' ? 0 : L * (S.plate === 'circle' ? 0.15 : 0.06);
+      logoSvg += '<image href="' + src + '" x="' + n(lx + pad) + '" y="' + n(ly + pad) + '" width="' + n(L - 2 * pad) + '" height="' + n(L - 2 * pad) + '" preserveAspectRatio="xMidYMid meet"/>';
+    }
+
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + W + '" width="' + W * 10 + '" height="' + W * 10 + '">' +
+      (defs ? '<defs>' + defs + '</defs>' : '') +
+      (transparent() ? '' : '<rect width="' + W + '" height="' + W + '" fill="' + bg + '"/>') +
+      '<path d="' + p + '" fill="' + dotFill + '"' + (S.dot === 'square' ? ' shape-rendering="crispEdges"' : '') + '/>' +
+      '<path d="' + eyesO + '" fill="' + eo + '" fill-rule="evenodd"/>' +
+      '<path d="' + eyesI + '" fill="' + ei + '"/>' + logoSvg + '</svg>';
+    return { svg: svg, N: N, ecl: e, cleared: hasLogo ? (lmods * lmods) / (N * N) : 0 };
+  }
+
+  function setDownloads(on) { $('dlPng').disabled = !on; $('dlSvg').disabled = !on; }
+  function render() {
+    $('logoSizeOut').textContent = $('logoSize').value + '%';
+    $('angleOut').textContent = $('angle').value + '°';
+    $('marginOut').textContent = $('margin').value;
+    var out = build();
+    if (!out) { $('stage').innerHTML = '<div class="qempty">Fill in what the code should open.</div>'; lastSvg = ''; $('info').textContent = ''; setDownloads(false); scanCheck(); return; }
+    if (out.error) { $('stage').innerHTML = '<div class="qempty qbad">' + out.error + '</div>'; lastSvg = ''; $('info').textContent = ''; setDownloads(false); scanCheck(); return; }
+    lastSvg = out.svg; $('stage').innerHTML = out.svg; setDownloads(true);
+    var eclPct = { L: 7, M: 15, Q: 25, H: 30 }[out.ecl];
+    var info = out.N + ' × ' + out.N + ' modules, error correction ' + out.ecl + ' (' + eclPct + '%)';
+    var warn = '';
+    if (out.ecl !== 'H' && out.cleared > 0) warn = 'Use error correction High (or Automatic) with a middle image.';
+    else if (out.cleared * 100 > eclPct * 0.8) warn = 'The middle image covers ' + Math.round(out.cleared * 100) + '% of the code. Make it smaller.';
+    else if (+$('logoSize').value > 33 && out.cleared > 0) warn = 'Large middle image: test-scan before printing.';
+    $('info').innerHTML = info + (warn ? '<br><span class="qbad">' + warn + '</span>' : '');
+    // contrast against the background (dark dots on a light background scan best)
+    var bg = transparent() ? '#FFFFFF' : $('bg').value, worst = Math.min(ratio($('c1').value, bg), S.fill === 'solid' ? 99 : ratio($('c2').value, bg));
+    var cmsg = worst < 2.5 ? '<span class="qbad">Low contrast (' + worst.toFixed(1) + ':1). Many phones will not scan this. Use darker dots or a lighter background.</span>'
+      : worst < 4 ? 'Contrast ' + worst.toFixed(1) + ':1. It should scan, but test it.' : 'Contrast ' + worst.toFixed(1) + ':1. Good.';
+    if (lum($('c1').value) > lum(bg) + 0.2) cmsg += ' Light dots on a dark background: some older scanners struggle.';
+    $('contrast').innerHTML = cmsg;
+    scanCheck();
+  }
+
+  // ---------- background swatches and hex codes ----------
+  BG_SW.forEach(function (c) {
+    var b = document.createElement('button'); b.type = 'button'; b.style.background = c[0]; b.title = c[1]; b.setAttribute('aria-label', 'Background ' + c[1]);
+    b.addEventListener('click', function () { $('bg').value = c[0].toLowerCase(); syncHex(); render(); });
+    $('bgSw').appendChild(b);
+  });
+  function setBgMode(m) {
+    S.bgMode = m;
+    each($('bgMode').children, function (x) { x.setAttribute('aria-pressed', x.dataset.v === m ? 'true' : 'false'); });
+    $('bgPick').hidden = m === 'transparent'; $('bgNote').hidden = m !== 'transparent';
+  }
+  each($('bgMode').children, function (b) { b.addEventListener('click', function () { setBgMode(b.dataset.v); render(); }); });
+  function syncHex() {
+    each(document.querySelectorAll('.qr-tool .hex'), function (h) { if (document.activeElement !== h) h.value = $(h.dataset.for).value.toUpperCase(); });
+    each($('bgSw').children, function (b, i) { b.setAttribute('aria-pressed', BG_SW[i][0].toLowerCase() === $('bg').value.toLowerCase() ? 'true' : 'false'); });
+  }
+  each(document.querySelectorAll('.qr-tool .hex'), function (h) {
+    h.addEventListener('input', function () {
+      var v = h.value.trim(); if (v.charAt(0) !== '#') v = '#' + v;
+      if (/^#[0-9a-f]{3}$/i.test(v)) v = '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+      if (/^#[0-9a-f]{6}$/i.test(v)) { $(h.dataset.for).value = v.toLowerCase(); render(); }
+    });
+    h.addEventListener('blur', syncHex);
+  });
+
+  // ---------- live scan check (decoder loaded only when needed) ----------
+  var scanTimer = 0, decoderLoading = false;
+  function loadDecoder(cb) {
+    if (window.jsQR) return cb();
+    if (decoderLoading) return; decoderLoading = true;
+    var sc = document.createElement('script'); sc.src = 'assets/vendor/jsqr.min.js';
+    sc.onload = function () { decoderLoading = false; cb(); };
+    sc.onerror = function () { decoderLoading = false; $('scan').className = 'qscan'; $('scan').textContent = 'Scan check unavailable. Test with a phone.'; };
+    document.head.appendChild(sc);
+  }
+  // styles the quick checker (jsQR) often cannot read even though phone scanners can (checked against ZXing)
+  function strictStyle() {
+    var weakEcl = $('ecl').value === 'L' && (S.logo === 'mpa' || (S.logo === 'upload' && !!uploaded));
+    return !weakEcl && (S.dot === 'dots' || S.dot === 'diamond' || S.eyeO !== S.eyeI);
+  }
+  function decodeAt(img, px, bgFill) {
+    var cv = document.createElement('canvas'); cv.width = cv.height = px;
+    var g = cv.getContext('2d'); g.fillStyle = bgFill; g.fillRect(0, 0, px, px); g.drawImage(img, 0, 0, px, px);
+    var d = g.getImageData(0, 0, px, px), r = window.jsQR(d.data, px, px, { inversionAttempts: 'attemptBoth' });
+    return r ? r.data : null;
+  }
+  function scanCheck() {
+    clearTimeout(scanTimer);
+    var el = $('scan');
+    if (!lastSvg) { el.className = 'qscan'; el.textContent = 'Scan check: nothing to check yet.'; return; }
+    el.className = 'qscan'; el.textContent = 'Scan check: checking…';
+    scanTimer = setTimeout(function () {
+      loadDecoder(function () {
+        var want = content(), svg = lastSvg, img = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+        img.onload = function () {
+          var bgFill = transparent() ? '#FFFFFF' : $('bg').value;
+          var big = decodeAt(img, 480, bgFill) === want, small = decodeAt(img, 150, bgFill) === want;
+          URL.revokeObjectURL(url);
+          if (svg !== lastSvg) return;   // the design changed meanwhile; a newer check is coming
+          if (big && small) { el.className = 'qscan pass'; el.textContent = '✓ Scan check passed, including at a small size.'; }
+          else if (big) { el.className = 'qscan part'; el.textContent = '⚠ Scans at full size but not when small. Print it larger, shorten the link, or use a smaller middle image.'; }
+          else if (strictStyle()) { el.className = 'qscan part'; el.textContent = '⚠ The quick check could not read this style. It is stricter than phone cameras with dot, diamond and mixed corner shapes, so test it with a phone (or pick the “Most reliable” preset).'; }
+          else { el.className = 'qscan fail'; el.textContent = '✗ Scan check failed. Try the “Most reliable” preset, square corners, a smaller middle image or a bigger border.'; }
+        };
+        img.onerror = function () { URL.revokeObjectURL(url); };
+        img.src = url;
+      });
+    }, 350);
+  }
+
+  // ---------- downloads ----------
+  function fileName(ext) {
+    var t = content().replace(/^https?:\/\//, '').replace(/^WIFI:.*?S:([^;]*).*/, 'wifi-$1').replace(/^(mailto|tel):/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) || 'qr';
+    return 'qr-' + t.toLowerCase() + '.' + ext;
+  }
+  function download(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+  $('dlSvg').addEventListener('click', function () { if (lastSvg) download(new Blob([lastSvg], { type: 'image/svg+xml' }), fileName('svg')); });
+  $('dlPng').addEventListener('click', function () {
+    if (!lastSvg) return;
+    var size = +$('px').value, img = new Image(), url = URL.createObjectURL(new Blob([lastSvg], { type: 'image/svg+xml' }));
+    img.onload = function () {
+      var cv = document.createElement('canvas'); cv.width = cv.height = size;
+      var g = cv.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url); cv.toBlob(function (b) { download(b, fileName('png')); }, 'image/png');
+    };
+    img.src = url;
+  });
+
+  // ---------- upload (scaled down to 512 px so files stay small) ----------
+  $('file').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        var s = Math.min(1, 512 / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+        cv.width = Math.round(im.width * s); cv.height = Math.round(im.height * s);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        uploaded = cv.toDataURL('image/png'); render();
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(f);
+  });
+
+  // ---------- controls ----------
+  function mark(id, v) { each($(id).children, function (x) { x.setAttribute('aria-pressed', x.dataset.v === v ? 'true' : 'false'); }); }
+  function seg(id, key, after) {
+    mark(id, S[key]);
+    each($(id).children, function (b) {
+      b.addEventListener('click', function () { S[key] = b.dataset.v; mark(id, S[key]); if (after) after(); render(); });
+    });
+    if (after) after();
+  }
+  seg('ctype', 'ctype', function () { each(document.querySelectorAll('.qr-tool [data-panel]'), function (p) { p.hidden = p.getAttribute('data-panel') !== S.ctype; }); });
+  seg('logo', 'logo', function () { $('uplF').classList.toggle('show', S.logo === 'upload'); });
+  seg('plate', 'plate'); seg('dot', 'dot'); seg('eyeO', 'eyeO'); seg('eyeI', 'eyeI');
+  function fillUi() { $('c2Wrap').hidden = S.fill === 'solid'; $('angleWrap').hidden = S.fill !== 'linear'; }
+  seg('fill', 'fill', fillUi);
+  ['link', 'text', 'ssid', 'wpw', 'wsec', 'email', 'subject', 'phone', 'logoSize', 'c1', 'c2', 'angle', 'eyeOuter', 'eyeInner', 'bg', 'margin', 'ecl'].forEach(function (id) {
+    $(id).addEventListener('input', render); $(id).addEventListener('change', render);
+  });
+  ['c1', 'c2', 'bg'].forEach(function (id) { $(id).addEventListener('input', syncHex); });
+  function eyeUi() { $('eyeCols').hidden = $('eyeSame').checked; }
+  $('eyeSame').addEventListener('change', function () { eyeUi(); render(); });
+  eyeUi();
+
+  // presets
+  PRESETS.forEach(function (pr, i) {
+    var b = document.createElement('button'); b.type = 'button'; b.title = pr.name; b.setAttribute('aria-label', pr.name + ' preset');
+    var dots = pr.fill === 'solid' ? pr.c1 : 'linear-gradient(135deg,' + pr.c1 + ',' + pr.c2 + ')';
+    b.style.background = pr.bg;
+    b.innerHTML = i === 0
+      ? '<i style="background:#07182B;color:#fff;display:grid;place-items:center;font-style:normal;font-size:15px">✓</i>'
+      : '<i style="background:' + dots + ';box-shadow:0 0 0 3px ' + pr.eo + '"></i>';
+    b.addEventListener('click', function () {
+      $('c1').value = pr.c1.toLowerCase(); $('c2').value = pr.c2.toLowerCase(); $('bg').value = pr.bg.toLowerCase(); setBgMode('color');
+      ['dot', 'eyeO', 'eyeI', 'plate'].forEach(function (k) { if (pr[k]) { S[k] = pr[k]; mark(k, pr[k]); } });
+      if (pr.logo) $('logoSize').value = pr.logo; if (pr.margin) $('margin').value = pr.margin;
+      $('eyeSame').checked = pr.eye; $('eyeOuter').value = pr.eo.toLowerCase(); $('eyeInner').value = pr.ei.toLowerCase(); eyeUi();
+      S.fill = pr.fill; mark('fill', pr.fill); fillUi();
+      each($('presets').children, function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      $('presetName').textContent = pr.name;
+      syncHex(); render();
+    });
+    $('presets').appendChild(b);
+  });
+  setBgMode('color');
+  $('presets').children[0].click();
+  $('logoSize').value = 30;   // keep the larger default middle image on first load
+  $('qr-lock').addEventListener('click', function () { try { sessionStorage.removeItem('mpa-qr-pass'); } catch (e) {} location.reload(); });
+  syncHex(); render();
+})();
+</script>
