@@ -205,6 +205,7 @@ p { margin: 0 0 1em; }
   background: radial-gradient(700px 300px at 85% 0%, rgba(254, 128, 5, .24), transparent 60%), linear-gradient(180deg, var(--ink), var(--ink-2)); }
 .page-hero h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); margin-bottom: .3em; }
 .page-hero p { color: var(--on-dark-muted); max-width: 60ch; font-size: 1.1rem; margin: 0; }
+.page-hero h1:last-child { margin-bottom: 0; }
 
 /* Sections */
 section.block { padding: 5rem 0; }
@@ -475,6 +476,7 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
 .cal-banner::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: linear-gradient(90deg, var(--orange) 0 34%, var(--crimson) 34% 67%, var(--blue) 67% 100%); }
 .cal-banner .icon { width: 52px; height: 52px; border-radius: 14px; background: var(--accent); color: var(--ink); flex: none; margin: 0; }
 .cal-banner .icon svg { width: 28px; height: 28px; }
+.cal-banner .icon.brand-youtube { background: #fff; color: #FF0000; } /* Watch Live: YouTube logo on a white tile */
 .cal-banner h2 { margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.3rem); color: #fff; letter-spacing: -.02em; line-height: 1.05; }
 .cal-banner p { margin: .15rem 0 0; color: var(--on-dark-muted); font-size: .95rem; }
 .cal-wrap .cal-embed { margin-top: 0; }
@@ -484,6 +486,10 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
 .inline-brand .ico { margin-right: .5rem; }
 .btn { align-items: center; }
 .inline-brand { display: inline-flex; align-items: center; }
+/* Card titles sit beside their icon (all pages) */
+.card-head { display: flex; align-items: center; gap: .85rem; margin-bottom: .6rem; }
+.card-head .icon { margin: 0; flex: none; }
+.card-head h3 { margin: 0; }
 .icon.brand svg { fill: currentColor; stroke: none; }
 .icon.brand-youtube { background: #fde7e7; color: #e00000; }
 .icon.brand-facebook { background: #e3edfd; color: #1877f2; }
@@ -601,6 +607,8 @@ tr.target-flash td { animation: flash 1.6s ease-out; }
 @media (max-width: 700px) {
   .live-banner { flex-wrap: wrap; }
   .live-banner .live-yt { margin-left: 0; width: 100%; text-align: center; }
+  .live-banner > div { flex: 1 1 0; min-width: 0; }   /* heading stays beside the YouTube logo on phones */
+  .live-banner .icon { width: 46px; height: 46px; }
 }
 
 /* ===== Belief page ===== */
@@ -644,6 +652,9 @@ section.block.bf-body{padding-top:2.5rem}
 section.block.wl-vision{text-align:center;padding-bottom:2.5rem}
 .wl-quote{margin:.8rem auto 0;max-width:20ch;font-family:"Instrument Serif",Georgia,serif;font-size:clamp(2.3rem,5.5vw,4rem);line-height:1.05;color:var(--ink)}
 .wl-quote em{color:var(--orange)}
+/* Vision on one line from tablet up; phones wrap it evenly */
+@media (min-width:600px){.wl-quote{max-width:none;white-space:nowrap;font-size:clamp(2rem,4.6vw,3.7rem)}}
+.wl-quote{text-wrap:balance}
 .wl-ref{margin:1rem auto 0;max-width:56ch;color:var(--muted)}
 .tri{display:flex;justify-content:center;gap:6px;margin:2rem auto 1.6rem}
 .tri span{width:56px;height:5px;border-radius:3px}
