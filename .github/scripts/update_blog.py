@@ -12,11 +12,14 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 
-# Read the blog directly from Blogger (new posts show up right away);
-# FeedBurner is only a fallback because it can lag hours behind.
+# Every source is read and the posts are merged, newest first. (Before Nov 2026 the first source
+# that answered won, so when Blogger refused GitHub's servers a weeks-old FeedBurner copy was used.)
 FEED_URLS = [
+    "https://www.blogger.com/feeds/8576215036211838839/posts/default?max-results=10",   # Blogger itself (blog ID)
     "https://tinkuthompson.blogspot.com/feeds/posts/default?max-results=10",
-    "http://feeds.feedburner.com/tinkuthompson",
+    "https://tinkuthompson.blogspot.com/feeds/posts/default?alt=rss&max-results=10",
+    "https://tinkuthompson.blogspot.com/feeds/posts/summary?max-results=10",
+    "https://feeds.feedburner.com/tinkuthompson",
 ]
 POSTS_TO_SHOW = 8
 PAGE = "team.html"
@@ -25,7 +28,11 @@ ATOM = "{http://www.w3.org/2005/Atom}"
 
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "MPA-Church-site-updater/1.0"})
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; MPA-Church-site-updater/1.1; +https://mpa.church)",
+        "Accept": "application/atom+xml, application/rss+xml, application/xml;q=0.9, */*;q=0.5",
+        "Cache-Control": "no-cache",
+    })
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.read()
 
@@ -80,16 +87,22 @@ def render(posts):
 
 
 def main():
-    posts = []
+    merged = {}
     for url in FEED_URLS:
         try:
-            posts = parse_feed(fetch(url))
-        except Exception as err:  # network or XML problem: try the next feed
+            found = parse_feed(fetch(url))
+        except Exception as err:  # network or XML problem: note it and keep going
             print(f"Could not read {url}: {err}")
             continue
-        if posts:
-            print(f"Read {len(posts)} posts from {url}")
-            break
+        newest = f"{found[0][2]:%Y-%m-%d}" if found and found[0][2] else "none"
+        print(f"{url}: {len(found)} posts, newest {newest}")
+        for title, link, date in found:
+            key = re.sub(r"^https?://|[?#].*$", "", link).rstrip("/")   # same post from different feeds
+            if key not in merged or (date and not merged[key][2]):
+                merged[key] = (title, link.replace("http://", "https://", 1), date)
+    posts = sorted(merged.values(), key=lambda p: p[2].timestamp() if p[2] else 0, reverse=True)[:POSTS_TO_SHOW]
+    if posts:
+        print("Showing: " + "; ".join(f"{p[2]:%Y-%m-%d} {p[0]}" if p[2] else p[0] for p in posts[:3]) + " ...")
     if not posts:
         print("Feed had no posts, leaving page unchanged.")
         return 0
