@@ -1,4 +1,7 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Deploys the site to GitHub Pages.
+# Two jobs, as GitHub recommends: "build" prepares and uploads the site, then "deploy" publishes it.
+# (With both in one job, GitHub sometimes reports "No artifacts named github-pages were found"
+#  because its artifact list has not caught up with the upload yet.)
 name: Deploy static content to Pages
 
 on:
@@ -23,11 +26,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -50,8 +49,16 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          # Upload entire repository
+          # Upload entire repository (dot-folders such as .github are left out)
           path: '.'
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
