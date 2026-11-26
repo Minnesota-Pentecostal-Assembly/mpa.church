@@ -67,6 +67,12 @@
 .qdl .btn[disabled]{opacity:.45;pointer-events:none}
 .qlock{margin:.9rem 0 0;font-size:.88rem;text-align:center}
 .qlock button{background:none;border:0;padding:.5rem;font:inherit;color:var(--accent-deep);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.qlock{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.4rem .9rem}
+.qlock .qreset{text-decoration:none}
+.qlock .qreset{display:inline-flex;align-items:center;gap:.45rem;border:1px solid var(--line);background:#fff;border-radius:999px;padding:.5rem 1rem;min-height:40px;font:600 .9rem var(--sans);color:var(--ink);cursor:pointer;transition:background-color .15s,color .15s,border-color .15s,transform .15s}
+.qreset svg{width:16px;height:16px;flex:none}
+.qreset:active{transform:scale(.96)}
+.qlock .qreset.armed{background:var(--crimson);border-color:var(--crimson);color:#fff}
 .qupl{display:none}.qupl.show{display:block}
 /* Colour picker built into the page (replaces the browser pop-up) */
 .qcol{width:46px;height:46px;padding:4px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:transform .15s,border-color .15s}
@@ -177,7 +183,7 @@
         <button class="btn btn-outline full" type="button" id="dlSvg">Download SVG</button>
       </div>
       <p class="hint">Always test-scan with a phone before printing, especially with gradients, light colours or a large middle image.</p>
-      <p class="qlock"><button type="button" id="qr-lock">Lock this page</button></p>
+      <p class="qlock"><button type="button" class="qreset" id="qr-reset" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span>Reset to defaults</span></button><button type="button" id="qr-lock">Lock this page</button></p>
     </section>
   </div>
 </div>
@@ -587,6 +593,20 @@
   $('presets').children[0].click();
   $('logoSize').value = 30;   // keep the larger default middle image on first load
   $('qr-lock').addEventListener('click', function () { try { sessionStorage.removeItem('mpa-qr-pass'); } catch (e) {} location.reload(); });
+  // Reset: first tap asks for a second tap (so nothing is lost by accident), second tap reloads the tool with every setting at its default.
+  // The page stays unlocked (the password is kept for this tab); an uploaded middle image is cleared.
+  var resetTimer = 0, resetBtn = $('qr-reset'), resetLabel = resetBtn.querySelector('span');
+  resetBtn.addEventListener('click', function () {
+    if (resetBtn.classList.contains('armed')) {
+      clearTimeout(resetTimer); resetLabel.textContent = 'Resetting\u2026';
+      try { sessionStorage.setItem('mpa-qr-top', '1'); } catch (e) {}
+      location.reload();
+      return;
+    }
+    resetBtn.classList.add('armed'); resetLabel.textContent = 'Tap again to reset';
+    resetTimer = setTimeout(function () { resetBtn.classList.remove('armed'); resetLabel.textContent = 'Reset to defaults'; }, 4000);
+  });
+  try { if (sessionStorage.getItem('mpa-qr-top')) { sessionStorage.removeItem('mpa-qr-top'); window.scrollTo(0, 0); } } catch (e) {}
   syncHex(); render();
 })();
 </script>
